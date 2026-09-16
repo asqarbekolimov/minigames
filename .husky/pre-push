@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+
+if ! npm run lint; then
+	echo "Pre-push aborted: ESLint found errors or warnings."
+	exit 1
+fi
+
+if ! npm run format:check; then
+	echo "Pre-push aborted: Prettier found formatting issues."
+	exit 1
+fi

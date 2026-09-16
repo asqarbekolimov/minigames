@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+
+commit_message=$(head -n 1 "$1")
+
+if ! printf '%s\n' "$commit_message" | grep -Eq '^(init|feat|fix|refactor|docs|style|test|chore|perf|revert)(\([a-z0-9._/-]+\))?: [a-z][^[:space:]].*$'; then
+  echo "Invalid commit message. Use: type: imperative subject"
+  echo "Allowed types: init, feat, fix, refactor, docs, style, test, chore, perf, revert"
+  exit 1
+fi
