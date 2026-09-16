@@ -1,0 +1,11 @@
+@use '../../styles/main.scss' as *;
+
+.start-button {
+  box-shadow: shadow('level-1');
+  border-radius: radius('md');
+  padding: btn-padding('md');
+  font-size: font-sizes('body-md');
+  color: $like;
+  font-family: $font-family-primary;
+  border: 2px solid $on-primary;
+}

@@ -1,0 +1,24 @@
+@use 'sass:map';
+@use '../abstracts/colors' as colors;
+@use '../abstracts/fonts' as fonts;
+
+body {
+  min-width: 376px;
+  background-color: colors.$bg;
+  color: colors.$on-primary;
+  font-family: fonts.$font-family-primary;
+  font-size: map.get(fonts.$font-sizes, 'body-md');
+  line-height: 1.5;
+}
+
+button,
+input,
+textarea,
+select {
+  color: inherit;
+}
+
+button {
+  border: 0;
+  background: none;
+}

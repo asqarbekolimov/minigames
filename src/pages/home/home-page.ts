@@ -6,6 +6,7 @@ export function createHomePage(): HTMLElement {
   homePage.innerHTML = `
     <section>
       <h1>Hello, World!</h1>
+      <button class="start-button">Start Game</button>
     </section>
   `;
 
