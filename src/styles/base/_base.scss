@@ -1,13 +1,14 @@
-@use 'sass:map';
-@use '../abstracts/colors' as colors;
-@use '../abstracts/fonts' as fonts;
+@use '../abstracts/colors' as *;
+@use '../abstracts/fonts' as *;
 
 body {
-  min-width: 376px;
-  background-color: colors.$bg;
-  color: colors.$on-primary;
-  font-family: fonts.$font-family-primary;
-  font-size: map.get(fonts.$font-sizes, 'body-md');
+  min-width: 0;
+  width: 100%;
+  overflow-x: hidden;
+  background-color: $bg;
+  color: $on-primary;
+  font-family: $font-family-primary;
+  font-size: font-sizes('body-md');
   line-height: 1.5;
 }
 

@@ -4,7 +4,16 @@
   box-shadow: shadow('level-1');
   border-radius: radius('md');
   padding: btn-padding('md');
-  font-size: font-sizes('body-md');
+  background-color: $bg;
+
+  @include respond-to('tablet') {
+    background-color: $on-primary;
+  }
+
+  @include respond-to('mobile') {
+    background-color: $teriary;
+  }
+
   color: $like;
   font-family: $font-family-primary;
   border: 2px solid $on-primary;
