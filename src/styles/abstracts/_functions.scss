@@ -1,0 +1,23 @@
+@use 'sass:map';
+@use 'fonts';
+@use 'sizes';
+
+@function size($key) {
+  @return map.get(sizes.$size, $key);
+}
+
+@function radius($key) {
+  @return map.get(sizes.$radius, $key);
+}
+
+@function shadow($key) {
+  @return map.get(sizes.$shadow, $key);
+}
+
+@function btn-padding($key) {
+  @return map.get(sizes.$btn-padding, $key);
+}
+
+@function font-sizes($key) {
+  @return map.get(fonts.$font-sizes, $key);
+}

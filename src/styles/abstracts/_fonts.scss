@@ -1,0 +1,28 @@
+//Font sizes
+$font-sizes: (
+  'display-lg': 56px,
+  'display-md': 36px,
+  'display-sm': 24px,
+  'headline-lg': 32px,
+  'headline-md': 24px,
+  'headline-sm': 20px,
+  'body-lg': 18px,
+  'body-md': 16px,
+  'body-sm': 14px,
+  'label-xl': 16px,
+  'label-lg': 14px,
+  'label-md': 12px,
+  'label-sm': 10px,
+);
+
+//Font weights
+$font-weights: (
+  'regular': 400,
+  'medium': 500,
+  'bold': 700,
+  'extra-bold': 800,
+);
+
+// Font families
+$font-family-primary: 'Inter', sans-serif;
+$font-family-secondary: 'Roboto', sans-serif;
