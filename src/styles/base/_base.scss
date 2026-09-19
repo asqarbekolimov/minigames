@@ -1,6 +1,6 @@
 @use '../abstracts/colors' as *;
 @use '../abstracts/fonts' as *;
-
+@use '../abstracts/functions' as *;
 body {
   min-width: 0;
   width: 100%;
@@ -8,8 +8,12 @@ body {
   background-color: $bg;
   color: $on-primary;
   font-family: $font-family-primary;
-  font-size: font-sizes('body-md');
-  line-height: 1.5;
+  font-size: font-size('body-md');
+  line-height: normal;
+}
+
+body.menu-open {
+  overflow: hidden;
 }
 
 button,
