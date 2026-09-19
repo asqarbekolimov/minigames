@@ -1,20 +1,142 @@
 @use '../../styles/main.scss' as *;
+@use '../../styles/abstracts/mixins' as *;
 
-.start-button {
-  box-shadow: shadow('level-1');
-  border-radius: radius('md');
-  padding: btn-padding('md');
-  background-color: $bg;
+.container {
+  width: 100%;
+  max-width: breakpoint('desktop');
+  margin: 0 auto;
+  box-sizing: border-box;
+  z-index: 1;
+}
+
+.section__hero {
+  position: relative;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  padding: size('14') size('15');
+  display: flex;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    opacity: 0.2;
+    background-image: url('@/assets/images/hero-background.png');
+    background-position: 50%;
+    background-size: cover;
+    position: absolute;
+    inset: 0;
+  }
+
+  &::after {
+    content: '';
+    background-color: #1e1b3aa6;
+    position: absolute;
+    inset: 0;
+  }
 
   @include respond-to('tablet') {
-    background-color: $on-primary;
+    padding: size('9') size('5');
   }
 
   @include respond-to('mobile') {
-    background-color: $teriary;
+    padding: size('8') size('2');
+  }
+}
+
+.hero__card {
+  display: flex;
+  max-width: 640px;
+  padding: size('6');
+  flex-direction: column;
+  align-items: flex-start;
+  gap: size('3');
+  border-radius: radius('xl');
+  border: 2px solid $on-primary;
+  background: $bg;
+  box-shadow:
+    8px 8px $on-primary,
+    inset 0 0 0 3px $on-primary;
+
+  @include respond-to('tablet') {
+    max-width: 480px;
+    padding: size('3');
+    gap: size('2');
+  }
+  @include respond-to('mobile') {
+    max-width: 480px;
+    padding: size('3');
+    gap: size('2');
+  }
+}
+
+.hero {
+  &__title {
+    color: $on-primary;
+    font-size: font-size('display-lg');
+    font-weight: font-weight('bold');
+    line-height: 110%;
+
+    @include respond-to('tablet') {
+      font-size: font-size('display-md');
+      line-height: 115%;
+    }
+    @include respond-to('mobile') {
+      font-size: font-size('display-sm');
+      line-height: 120%;
+    }
   }
 
-  color: $like;
-  font-family: $font-family-primary;
-  border: 2px solid $on-primary;
+  &__text {
+    color: $on-bg;
+    font-size: font-size('body-lg');
+    font-style: normal;
+    font-weight: font-weight('medium');
+    line-height: 150%;
+
+    @include respond-to('tablet') {
+      font-size: font-size('body-sm');
+      line-height: 140%;
+    }
+    @include respond-to('mobile') {
+      font-size: font-size('label-md');
+      line-height: 140%;
+    }
+
+    &-full {
+      @include respond-to('mobile') {
+        display: none;
+      }
+    }
+
+    &-short {
+      @include respond-to('desktop') {
+        display: none;
+      }
+      @include respond-to('mobile') {
+        display: inline-block;
+      }
+    }
+  }
+  &__button {
+    padding: size('2') size('3');
+    border-radius: radius('sm');
+    font-size: font-size('body-lg');
+    font-weight: font-weight('bold');
+    transition: all linear 0.3s;
+    background: $primary;
+    box-shadow: inset 0 0 0 2px #111;
+    &:hover {
+      background-color: $primary-high;
+    }
+
+    @include respond-to('tablet') {
+      font-size: font-size('body-sm');
+      padding: 10px 20px;
+    }
+    @include respond-to('mobile') {
+      font-size: font-size('label-md');
+      padding: 8px 16px;
+    }
+  }
 }
