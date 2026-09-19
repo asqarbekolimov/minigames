@@ -18,6 +18,10 @@
   @return map.get(sizes.$btn-padding, $key);
 }
 
-@function font-sizes($key) {
+@function font-size($key) {
   @return map.get(fonts.$font-sizes, $key);
+}
+
+@function font-weight($key) {
+  @return map.get(fonts.$font-weights, $key);
 }
