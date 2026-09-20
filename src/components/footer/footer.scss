@@ -59,6 +59,7 @@
     display: flex;
     align-items: flex-start;
     gap: size('10');
+    flex-wrap: wrap;
   }
 
   &__group {
