@@ -89,7 +89,7 @@ export function createTopPlayers(): HTMLElement {
               </th>
               <th class="top-players__cell top-players__cell--head">
                 <span class="top-players__cell-label--full">Total Score</span>
-                <span class="top-players__cell-label--short">Total Score</span>
+                <span class="top-players__cell-label--short">Score</span>
               </th>
               <th class="top-players__cell top-players__cell--head">
                 <span class="top-players__cell-label">Streak</span>
