@@ -56,11 +56,17 @@ export function createHeader(): HTMLElement {
 
   const signInButton = document.createElement('button');
   signInButton.classList.add('button', 'signin__button');
-  signInButton.textContent = 'Sign In';
+  signInButton.textContent = 'Log In';
+  signInButton.addEventListener('click', () => {
+    globalThis.dispatchEvent(new CustomEvent('open-auth-modal', { detail: 'login' }));
+  });
 
   const signUpButton = document.createElement('button');
   signUpButton.classList.add('button', 'signup__button');
   signUpButton.textContent = 'Sign Up';
+  signUpButton.addEventListener('click', () => {
+    globalThis.dispatchEvent(new CustomEvent('open-auth-modal', { detail: 'register' }));
+  });
 
   const menuButton = document.createElement('button');
   menuButton.classList.add('button', 'menu__button');
@@ -132,10 +138,18 @@ export function createHeader(): HTMLElement {
   const mobileSignInButton = document.createElement('button');
   mobileSignInButton.classList.add('button', 'signin__button', 'signin__button--mobile');
   mobileSignInButton.textContent = 'Log In';
+  mobileSignInButton.addEventListener('click', () => {
+    globalThis.dispatchEvent(new CustomEvent('open-auth-modal', { detail: 'login' }));
+    toggleMenu();
+  });
 
   const mobileSignUpButton = document.createElement('button');
   mobileSignUpButton.classList.add('button', 'signup__button', 'signup__button--mobile');
   mobileSignUpButton.textContent = 'Sign Up';
+  mobileSignUpButton.addEventListener('click', () => {
+    globalThis.dispatchEvent(new CustomEvent('open-auth-modal', { detail: 'register' }));
+    toggleMenu();
+  });
 
   mobileActions.append(mobileSignInButton, mobileSignUpButton);
   mobileMenu.append(mobileHeaderRow, mobileNavbar, mobileActions);
