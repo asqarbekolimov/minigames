@@ -161,6 +161,170 @@
   @extend .home__container;
 }
 
+.slider__container {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px 8px 8px;
+  overflow: hidden;
+}
+
+.slider__inner {
+  display: flex;
+  width: max-content;
+  align-items: stretch;
+  gap: size('1');
+  transition: transform 280ms ease;
+}
+
+.game-card {
+  position: relative;
+  display: flex;
+  height: 384px;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border: 2.5px solid $on-primary;
+  border-radius: radius('xl');
+  background: $white;
+  box-shadow: 4px 4px 0 $on-primary;
+
+  &--peek {
+    width: 120px;
+  }
+
+  &--side {
+    width: 288px;
+  }
+
+  &--featured {
+    width: 816px;
+  }
+
+  &__image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  &__overlay {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    gap: size('1');
+    padding: size('2');
+    background: linear-gradient(
+      180deg,
+      transparent 0%,
+      rgba(0, 0, 0, 0.4) 17%,
+      rgba(0, 0, 0, 0.85) 100%
+    );
+    color: $white;
+  }
+
+  h3 {
+    color: $white;
+    font-size: font-size('body-lg');
+    font-weight: font-weight('bold');
+  }
+
+  &__stats {
+    display: flex;
+    justify-content: space-between;
+    font-size: font-size('body-md');
+    font-weight: font-weight('bold');
+
+    > span {
+      display: inline-flex;
+      align-items: center;
+      gap: size('05');
+      white-space: nowrap;
+    }
+  }
+
+  &__star,
+  &__heart {
+    display: inline-flex;
+    width: 20px;
+    height: 19px;
+    flex: 0 0 20px;
+    color: $primary;
+  }
+
+  &__heart {
+    color: $like;
+  }
+}
+
+@media (max-width: 1600px) and (min-width: 769px) {
+  .game-card {
+    &--peek {
+      width: 5vw;
+    }
+
+    &--side {
+      width: 14vw;
+    }
+
+    &--featured {
+      width: 42vw;
+    }
+  }
+}
+
+@include respond-to('tablet') {
+  .game-card {
+    height: 300px;
+
+    &--peek {
+      width: 88px;
+    }
+
+    &--side {
+      width: 220px;
+    }
+
+    &--featured {
+      width: min(62vw, 580px);
+    }
+  }
+}
+
+@include respond-to('mobile') {
+  .slider__inner {
+    padding: 0;
+  }
+
+  .game-card {
+    height: 240px;
+
+    &--peek {
+      width: 56px;
+    }
+
+    &--side {
+      width: 156px;
+    }
+
+    &--featured {
+      width: 74vw;
+    }
+  }
+
+  .game-card__overlay {
+    padding: size('1');
+  }
+
+  .game-card h3 {
+    font-size: font-size('label-lg');
+  }
+
+  .game-card__stats {
+    font-size: font-size('label-md');
+  }
+}
+
 .slider__header {
   width: 100%;
   display: flex;
