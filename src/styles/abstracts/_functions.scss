@@ -1,6 +1,7 @@
 @use 'sass:map';
 @use 'fonts';
 @use 'sizes';
+@use 'mixins';
 
 @function size($key) {
   @return map.get(sizes.$size, $key);

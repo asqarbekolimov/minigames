@@ -1,14 +1,18 @@
+import { createHeroSection } from '@/components/home-page/hero';
 import './home-page.scss';
+import { createSliderSection } from '@/components/home-page/slider';
+import { createTopPlayers } from '@/components/home-page/top-player';
+import { createCtaSection } from '@/components/home-page/cta';
 
 export function createHomePage(): HTMLElement {
   const homePage = document.createElement('main');
 
-  homePage.innerHTML = `
-    <section>
-      <h1>Hello, World!</h1>
-      <button class="start-button">Start Game</button>
-    </section>
-  `;
+  homePage.append(
+    createHeroSection(),
+    createSliderSection(),
+    createTopPlayers(),
+    createCtaSection(),
+  );
 
   return homePage;
 }
