@@ -36,11 +36,11 @@ export function createAuthForm(initialMode: 'login' | 'register' = 'login'): HTM
 
   const setMode = (mode: 'login' | 'register') => {
     const isLogin = mode === 'login';
-    tabs.forEach((tab) => {
+    for (const tab of tabs) {
       const isActive = tab.dataset.authTab === mode;
       tab.classList.toggle('auth-tabs__tab--active', isActive);
       tab.setAttribute('aria-selected', String(isActive));
-    });
+    }
     if (title) title.textContent = isLogin ? 'Welcome Back!' : 'Create Your Account';
     if (copy)
       copy.textContent = isLogin
@@ -52,9 +52,11 @@ export function createAuthForm(initialMode: 'login' | 'register' = 'login'): HTM
     if (footerAction) footerAction.textContent = isLogin ? 'Register' : 'Login';
   };
 
-  tabs.forEach((tab) =>
-    tab.addEventListener('click', () => setMode(tab.dataset.authTab as 'login' | 'register')),
-  );
+  for (const tab of tabs) {
+    tab.addEventListener('click', () =>
+      setMode(tab.dataset.authTab as 'login' | 'register'),
+    );
+  }
   footerAction?.addEventListener('click', () =>
     setMode(footerAction.textContent === 'Register' ? 'register' : 'login'),
   );
