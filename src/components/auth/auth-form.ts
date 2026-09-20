@@ -53,9 +53,7 @@ export function createAuthForm(initialMode: 'login' | 'register' = 'login'): HTM
   };
 
   for (const tab of tabs) {
-    tab.addEventListener('click', () =>
-      setMode(tab.dataset.authTab as 'login' | 'register'),
-    );
+    tab.addEventListener('click', () => setMode(tab.dataset.authTab as 'login' | 'register'));
   }
   footerAction?.addEventListener('click', () =>
     setMode(footerAction.textContent === 'Register' ? 'register' : 'login'),
