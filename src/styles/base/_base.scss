@@ -16,6 +16,15 @@ body.menu-open {
   overflow: hidden;
 }
 
+.wrapper {
+  flex-direction: column;
+  width: 100%;
+  max-width: 1920px;
+  min-height: 100vh;
+  margin: 0 auto;
+  display: flex;
+}
+
 button,
 input,
 textarea,
