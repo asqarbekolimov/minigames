@@ -26,3 +26,7 @@
 @function font-weight($key) {
   @return map.get(fonts.$font-weights, $key);
 }
+
+@function z-index($key) {
+  @return map.get(sizes.$z-index, $key);
+}

@@ -76,7 +76,7 @@ export function createSliderSection(): HTMLElement {
           </div>
         </div>
       `
-          : ''
+          : `<h3 class="visually-hidden">${game.title}</h3>`
       }
     `;
     inner?.append(card);

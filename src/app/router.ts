@@ -7,13 +7,36 @@ function renderApp(root: HTMLElement) {
   let loginModal: HTMLElement | undefined;
 
   const closeLoginModal = () => {
-    loginModal?.remove();
-    loginModal = undefined;
-    document.body.classList.remove('auth-modal-open');
+    const modal = loginModal;
+    if (!modal || modal.classList.contains('auth-page--closing')) return;
+
+    if (globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      modal.remove();
+      loginModal = undefined;
+      document.body.classList.remove('auth-modal-open');
+      return;
+    }
+
+    const finishClose = () => {
+      if (loginModal !== modal) return;
+      clearTimeout(closeTimer);
+      modal.removeEventListener('animationend', handleAnimationEnd);
+      modal.remove();
+      loginModal = undefined;
+      document.body.classList.remove('auth-modal-open');
+    };
+
+    const handleAnimationEnd = (event: AnimationEvent) => {
+      if (event.target === modal) finishClose();
+    };
+
+    modal.classList.add('auth-page--closing');
+    modal.addEventListener('animationend', handleAnimationEnd);
+    const closeTimer = setTimeout(finishClose, 200);
   };
 
   document.addEventListener('keydown', (event) => {
-    if (loginModal && event.key === 'Escape') closeLoginModal();
+    if (loginModal && (event.key === 'Escape' || event.key === 'Esc')) closeLoginModal();
   });
 
   const openAuthModal = (mode: 'login' | 'register' = 'login') => {

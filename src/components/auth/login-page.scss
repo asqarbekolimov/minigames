@@ -24,18 +24,47 @@ body.auth-modal-open {
   }
 }
 
+@keyframes auth-backdrop-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes auth-dialog-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.98);
+  }
+}
+
 .auth-page {
   position: fixed;
-  z-index: 10;
+  z-index: z-index('dropdown');
   inset: 0;
   display: flex;
   min-height: 100%;
   align-items: flex-start;
   justify-content: center;
-  padding: 16px;
+  padding: size('2');
   overflow-y: auto;
-  background: rgba(17, 17, 17, 0.62);
+  background: $backdrop;
   animation: auth-backdrop-in 180ms ease-out both;
+
+  &--closing {
+    pointer-events: none;
+    animation: auth-backdrop-out 160ms ease-in both;
+
+    .login-dialog {
+      animation: auth-dialog-out 160ms ease-in both;
+    }
+  }
 }
 
 .login-dialog {
@@ -49,7 +78,7 @@ body.auth-modal-open {
   border: 3px solid $on-primary;
   border-radius: radius('xl');
   background: $bg;
-  box-shadow: 8px 8px 0 #111;
+  box-shadow: 8px 8px 0 $black;
   animation: auth-dialog-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 
   &__header {
@@ -93,7 +122,7 @@ body.auth-modal-open {
 
 .auth-tabs {
   display: flex;
-  height: 48px;
+  height: size('6');
   border: 2.5px solid $on-primary;
   border-radius: radius('md');
   background: $white;
@@ -108,7 +137,7 @@ body.auth-modal-open {
     font-weight: font-weight('bold');
 
     &:hover {
-      background-color: rgba(255, 249, 229, 0.6);
+      background-color: $surface-hover;
     }
 
     &--active {
@@ -138,7 +167,7 @@ body.auth-modal-open {
 
   &__control {
     display: flex;
-    height: 48px;
+    height: size('6');
     align-items: center;
     gap: size('2');
     padding: 0 size('2');
@@ -239,14 +268,14 @@ body.auth-modal-open {
   color: $on-primary;
 
   img {
-    width: 24px;
-    height: 24px;
+    width: size('3');
+    height: size('3');
   }
 }
 
 @include respond-to('mobile') {
   .auth-page {
-    padding: 12px;
+    padding: size('1.5');
   }
 
   .login-dialog {
@@ -254,9 +283,101 @@ body.auth-modal-open {
   }
 }
 
+// Form switch animations (login ↔ register)
+@keyframes auth-form-out-left {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+}
+
+@keyframes auth-form-out-right {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+
+@keyframes auth-form-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes auth-form-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes auth-header-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.auth-form-slot {
+  &--out-left {
+    animation: auth-form-out-left 160ms ease-in both;
+  }
+
+  &--out-right {
+    animation: auth-form-out-right 160ms ease-in both;
+  }
+
+  &--in-left {
+    animation: auth-form-in-left 220ms ease-out both;
+  }
+
+  &--in-right {
+    animation: auth-form-in-right 220ms ease-out both;
+  }
+}
+
+.login-dialog__header--animating {
+  animation: auth-header-in 220ms ease-out both;
+}
+
+.auth-tabs__tab {
+  transition:
+    background-color 200ms ease,
+    color 200ms ease;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .auth-page,
   .login-dialog {
+    animation: none;
+  }
+
+  .auth-form-slot--out-left,
+  .auth-form-slot--out-right,
+  .auth-form-slot--in-left,
+  .auth-form-slot--in-right,
+  .login-dialog__header--animating {
     animation: none;
   }
 }

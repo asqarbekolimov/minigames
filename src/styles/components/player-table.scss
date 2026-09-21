@@ -24,7 +24,7 @@
   width: 100%;
   overflow: hidden;
   border: 2.5px solid $on-primary;
-  border-radius: 16px;
+  border-radius: radius('lg');
   background: $white;
   box-shadow: 6px 6px 0 0 $on-primary;
 }
@@ -43,7 +43,7 @@
     80px minmax(180px, 1.8fr) minmax(90px, 1fr) minmax(120px, 1.2fr) minmax(105px, 1fr)
     minmax(180px, 1.5fr);
   align-items: center;
-  min-height: 72px;
+  min-height: size('9');
   border-bottom: 1px solid $outline;
 }
 
@@ -72,7 +72,7 @@ thead .top-players__cell--player {
 .top-players__row--header {
   background: $teriary;
   border-bottom: 1.5px solid $on-primary;
-  min-height: 72px;
+  min-height: size('9');
 }
 
 .top-players__cell {
@@ -88,8 +88,8 @@ thead .top-players__cell--player {
 .top-players__cell--head {
   justify-content: center;
   color: $white;
-  font-size: 16px;
-  font-weight: 800;
+  font-size: font-size('body-md');
+  font-weight: font-weight('extra-bold');
   text-transform: uppercase;
   line-height: 1.2;
 }
@@ -120,21 +120,21 @@ thead .top-players__cell--player {
   display: inline-flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 12px;
+  gap: size('1.5');
   min-width: 0;
 }
 
 .top-players__avatar {
   display: inline-flex;
-  width: 40px;
-  height: 40px;
-  border-radius: 20px;
+  width: size('5');
+  height: size('5');
+  border-radius: radius('full');
   border: 1.5px solid $on-primary;
   align-items: center;
   justify-content: center;
   color: $on-primary;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: font-size('body-sm');
+  font-weight: font-weight('bold');
   line-height: 1;
   flex-shrink: 0;
 }
@@ -145,30 +145,30 @@ thead .top-players__cell--player {
 .top-players__streak {
   white-space: nowrap;
   // font-family: $font-family-secondary;
-  font-size: 16px;
+  font-size: font-size('body-md');
   line-height: 1.2;
 }
 
 .top-players__name {
-  font-weight: 700;
+  font-weight: font-weight('bold');
   color: $on-primary;
 }
 
 .top-players__value {
-  font-weight: 600;
+  font-weight: font-weight('semibold');
   color: $on-primary;
 }
 
 .top-players__value--score {
-  font-weight: 700;
+  font-weight: font-weight('bold');
 }
 
 .top-players__rank {
-  font-weight: 800;
+  font-weight: font-weight('extra-bold');
 }
 
 .top-players__streak {
-  font-weight: 700;
+  font-weight: font-weight('bold');
 }
 
 .top-players__streak--short {
@@ -181,14 +181,14 @@ thead .top-players__cell--player {
   justify-content: center;
   background: $bg;
   // border: 1.5px solid $on-primary;
-  border-radius: 20px;
-  padding: 4px 12px;
+  border-radius: radius('full');
+  padding: size('05') size('1.5');
   color: $on-primary;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: font-size('label-md');
+  font-weight: font-weight('bold');
   line-height: 1.2;
   white-space: nowrap;
-  box-shadow: inset 0 0 0 1.5px #111;
+  box-shadow: inset 0 0 0 1.5px $black;
 }
 
 @include respond-to('tablet') {
@@ -206,8 +206,8 @@ thead .top-players__cell--player {
         72px,
         0.8fr
       );
-    min-height: 56px;
-    padding: 12px 16px;
+    min-height: size('7');
+    padding: size('1.5') size('2');
   }
 
   thead .top-players__cell:last-child,
@@ -217,7 +217,7 @@ thead .top-players__cell--player {
 
   .top-players__cell--games .top-players__cell-label,
   .top-players__cell--score .top-players__cell-label {
-    font-size: 10px;
+    font-size: font-size('label-sm');
     letter-spacing: 0.02em;
   }
 
@@ -230,25 +230,25 @@ thead .top-players__cell--player {
   }
 
   .top-players__cell--head {
-    font-size: 12px;
+    font-size: font-size('label-md');
   }
 
   .top-players__avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 16px;
-    font-size: 12px;
+    width: size('4');
+    height: size('4');
+    border-radius: radius('lg');
+    font-size: font-size('label-md');
   }
 
   .top-players__player {
-    gap: 8px;
+    gap: size('1');
   }
 
   .top-players__name,
   .top-players__value,
   .top-players__rank,
   .top-players__streak {
-    font-size: 14px;
+    font-size: font-size('body-sm');
   }
 
   .top-players__streak--full {
@@ -268,19 +268,19 @@ thead .top-players__cell--player {
 
   .leaderboard__table-wrap {
     border-width: 2px;
-    border-radius: 12px;
-    box-shadow: 4px 4px 0 0 $on-primary;
+    border-radius: radius('md');
+    box-shadow: shadow('level-1');
   }
 
   .top-players__row {
     grid-template-columns: 32px minmax(90px, 1.8fr) minmax(64px, 0.85fr) minmax(58px, 0.7fr);
     min-height: 52px;
     padding: 10px 12px;
-    gap: 8px;
+    gap: size('1');
   }
 
   .top-players__row--header {
-    min-height: 48px;
+    min-height: size('6');
   }
 
   thead .top-players__cell:nth-child(3),
@@ -305,7 +305,7 @@ thead .top-players__cell--player {
   }
 
   .top-players__cell--head {
-    font-size: 10px;
+    font-size: font-size('label-sm');
     letter-spacing: 0.04em;
   }
 
@@ -317,19 +317,19 @@ thead .top-players__cell--player {
   .top-players__avatar {
     width: 28px;
     height: 28px;
-    border-radius: 14px;
-    font-size: 10px;
+    border-radius: radius('full');
+    font-size: font-size('label-sm');
   }
 
   .top-players__player {
-    gap: 6px;
+    gap: size('05');
   }
 
   .top-players__name,
   .top-players__value,
   .top-players__rank,
   .top-players__streak {
-    font-size: 12px;
+    font-size: font-size('label-md');
   }
 
   .top-players__streak--full {

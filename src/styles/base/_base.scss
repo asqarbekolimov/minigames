@@ -1,5 +1,6 @@
 @use '../abstracts/colors' as *;
 @use '../abstracts/fonts' as *;
+@use '../abstracts/mixins' as *;
 @use '../abstracts/functions' as *;
 body {
   min-width: 0;
@@ -19,7 +20,7 @@ body.menu-open {
 .wrapper {
   flex-direction: column;
   width: 100%;
-  max-width: 1920px;
+  max-width: breakpoint('desktop');
   min-height: 100vh;
   margin: 0 auto;
   display: flex;
