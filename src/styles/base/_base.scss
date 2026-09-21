@@ -1,0 +1,39 @@
+@use '../abstracts/colors' as *;
+@use '../abstracts/fonts' as *;
+@use '../abstracts/mixins' as *;
+@use '../abstracts/functions' as *;
+body {
+  min-width: 0;
+  width: 100%;
+  overflow-x: hidden;
+  background-color: $bg;
+  color: $on-primary;
+  font-family: $font-family-primary;
+  font-size: font-size('body-md');
+  line-height: normal;
+}
+
+body.menu-open {
+  overflow: hidden;
+}
+
+.wrapper {
+  flex-direction: column;
+  width: 100%;
+  max-width: breakpoint('desktop');
+  min-height: 100vh;
+  margin: 0 auto;
+  display: flex;
+}
+
+button,
+input,
+textarea,
+select {
+  color: inherit;
+}
+
+button {
+  border: 0;
+  background: none;
+}

@@ -1,0 +1,32 @@
+@use 'sass:map';
+@use 'fonts';
+@use 'sizes';
+@use 'mixins';
+
+@function size($key) {
+  @return map.get(sizes.$size, $key);
+}
+
+@function radius($key) {
+  @return map.get(sizes.$radius, $key);
+}
+
+@function shadow($key) {
+  @return map.get(sizes.$shadow, $key);
+}
+
+@function btn-padding($key) {
+  @return map.get(sizes.$btn-padding, $key);
+}
+
+@function font-size($key) {
+  @return map.get(fonts.$font-sizes, $key);
+}
+
+@function font-weight($key) {
+  @return map.get(fonts.$font-weights, $key);
+}
+
+@function z-index($key) {
+  @return map.get(sizes.$z-index, $key);
+}
