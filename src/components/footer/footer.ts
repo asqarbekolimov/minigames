@@ -9,7 +9,7 @@ export function createFooter(): HTMLElement {
     <div class="container">
       <div class="footer__top">
         <div class="footer__about">
-          <a class="footer__brand" href="/" aria-label="MiniGames home">
+          <a class="footer__brand" href="#" data-route="home" aria-label="MiniGames home">
             <img src="${logo}" alt="" />
             <span>MiniGames</span>
           </a>
@@ -19,10 +19,10 @@ export function createFooter(): HTMLElement {
         <nav class="footer__nav" aria-label="Footer navigation">
           <div class="footer__group">
             <h2>Explore</h2>
-            <a href="#">Home</a>
-            <a href="#">Library</a>
-            <a href="#">Categories</a>
-            <a href="#">Tournaments</a>
+            <a href="#" data-route="home">Home</a>
+            <a href="#" data-route="library">Library</a>
+            <a href="#" data-route="categories">Categories</a>
+            <a href="#" data-route="tournaments">Tournaments</a>
           </div>
           <div class="footer__group">
             <h2>Company</h2>

@@ -2,10 +2,10 @@ import './header.scss';
 import logoPath from '@/assets/icons/logo.svg';
 
 const navLinks = [
-  { path: '#', name: 'Home' },
-  { path: '#', name: 'Library' },
-  { path: '#', name: 'Tournaments' },
-  { path: '#', name: 'Community' },
+  { route: 'home', name: 'Home' },
+  { route: 'library', name: 'Library' },
+  { route: 'tournaments', name: 'Tournaments' },
+  { route: 'community', name: 'Community' },
 ];
 
 export function createHeader(): HTMLElement {
@@ -15,6 +15,7 @@ export function createHeader(): HTMLElement {
   const logo = document.createElement('a');
   logo.classList.add('header__logo');
   logo.href = '#';
+  logo.dataset.route = 'home';
 
   const logoImg = document.createElement('img');
   logoImg.classList.add('header__logo-image');
@@ -38,12 +39,10 @@ export function createHeader(): HTMLElement {
     navbarItem.classList.add('nav__item');
 
     const navLink = document.createElement('a');
-    navLink.href = link.path;
+    navLink.href = '#';
+    navLink.dataset.route = link.route;
+    navLink.dataset.text = link.name;
     navLink.textContent = link.name;
-
-    if (link.name === 'Home') {
-      navbarItem.classList.add('active');
-    }
 
     navbarItem.append(navLink);
     return navbarItem;
@@ -118,13 +117,11 @@ export function createHeader(): HTMLElement {
     mobileNavItem.classList.add('mobile_menu__item');
 
     const linkElement = document.createElement('a');
-    linkElement.href = link.path;
+    linkElement.href = '#';
+    linkElement.dataset.route = link.route;
+    linkElement.dataset.text = link.name;
     linkElement.textContent = link.name;
     linkElement.classList.add('mobile_menu__link');
-
-    if (link.name === 'Home') {
-      linkElement.classList.add('active');
-    }
 
     mobileNavItem.append(linkElement);
     return mobileNavItem;
@@ -180,6 +177,23 @@ export function createHeader(): HTMLElement {
   }
 
   mobileMenuButton.addEventListener('click', toggleMenu);
+
+  const setActiveLink = (route: string) => {
+    const items = header.querySelectorAll<HTMLElement>('.nav__item, .mobile_menu__item');
+    for (const item of items) {
+      const link = item.querySelector<HTMLAnchorElement>('a[data-route]');
+      const isActive = link?.dataset.route === route;
+      if (item.classList.contains('nav__item')) item.classList.toggle('active', isActive);
+      link?.classList.toggle('active', isActive);
+    }
+  };
+
+  globalThis.addEventListener('route-change', (event) => {
+    const { route } = (event as CustomEvent<{ route: string }>).detail;
+    setActiveLink(route);
+  });
+
+  setActiveLink('home');
 
   return header;
 }

@@ -73,6 +73,10 @@
   &:hover {
     color: $on-primary;
   }
+
+  a {
+    @include stable-weight(font-weight('bold'));
+  }
 }
 
 .signin__button {
@@ -327,6 +331,7 @@
   }
 
   &__link {
+    @include stable-weight(font-weight('bold'));
     color: $on-bg-footer;
     font-size: font-size('body-lg');
     font-weight: font-weight('medium');

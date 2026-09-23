@@ -1,13 +1,20 @@
 import { createHeader } from '@/components/header/header';
 import { createFooter } from '@/components/footer/footer';
 import { createAuthForm } from '@/components/auth/auth-form';
-import { createHomePage } from '@/pages/';
 
-export function createAppLayout(): HTMLElement {
+export interface AppLayout {
+  element: HTMLElement;
+  content: HTMLElement;
+}
+
+export function createAppLayout(): AppLayout {
   const layout = document.createElement('div');
   layout.classList.add('wrapper');
 
-  layout.append(createHeader(), createHomePage(), createFooter());
+  const content = document.createElement('div');
+  content.classList.add('layout__content');
+
+  layout.append(createHeader(), content, createFooter());
 
   let loginModal: HTMLElement | undefined;
 
@@ -57,5 +64,5 @@ export function createAppLayout(): HTMLElement {
     openAuthModal(mode);
   });
 
-  return layout;
+  return { element: layout, content };
 }
