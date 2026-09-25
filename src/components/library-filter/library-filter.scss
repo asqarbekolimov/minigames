@@ -1,0 +1,93 @@
+@use '../../styles/main.scss' as *;
+
+.library {
+  &__contents {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: size('5');
+  }
+}
+
+.filter-sort-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: size('2');
+  padding: size('2') 0;
+
+  @include respond-to('tablet') {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .filter-chips {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: center;
+    gap: size('2');
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    .chip-button {
+      flex: 0 0 auto;
+      white-space: nowrap;
+      padding: size('1') size('2');
+      border-radius: radius('xl');
+      box-shadow: inset 0 0 0 2px $on-primary;
+      font-size: font-size('label-lg');
+      font-weight: font-weight('bold');
+
+      &.active {
+        background-color: $primary;
+
+        &:hover {
+          background-color: $primary;
+        }
+      }
+
+      &:hover {
+        background-color: $surface;
+      }
+    }
+
+    @include respond-to('mobile') {
+      width: 100%;
+      gap: size('1');
+      font-size: font-size('label-md');
+    }
+  }
+
+  .filter-dropdown {
+    display: flex;
+    align-items: center;
+    gap: size('1');
+    flex-shrink: 0;
+    padding: size('1') size('2');
+    border-radius: radius('xl');
+    box-shadow: inset 0 0 0 2px $on-primary;
+    font-size: font-size('label-lg');
+    font-weight: font-weight('bold');
+
+    &:hover {
+      background-color: $surface;
+      cursor: pointer;
+    }
+
+    @include respond-to('mobile') {
+      width: 100%;
+      justify-content: space-between;
+      align-items: center;
+    }
+  }
+}
+
+.dropdown__arrow {
+}

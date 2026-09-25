@@ -1,12 +1,45 @@
+import { createLibraryFilter } from '@/components/library-filter/library-filter';
+import './library-page.scss';
+
 export function createLibraryPage(): HTMLElement {
-  const page = document.createElement('main');
-  page.classList.add('page-placeholder');
+  const main = document.createElement('main'),
+    libraryPage = document.createElement('section'),
+    container = document.createElement('div');
 
-  page.innerHTML = `
-  <div>
-    <h1>Library</h1>
-  </div>
-  `;
+  libraryPage.classList.add('library-section');
+  container.classList.add('container');
 
-  return page;
+  main.append(libraryPage);
+  libraryPage.append(container);
+  container.append(renderLibraryPageContents());
+
+  return main;
+}
+
+function renderLibraryPageContents(): HTMLElement {
+  const contents = document.createElement('div');
+
+  contents.classList.add('library__contents');
+
+  contents.append(libraryPageTitle(), createLibraryFilter());
+
+  return contents;
+}
+
+function libraryPageTitle() {
+  const pageTitle = document.createElement('div');
+  pageTitle.classList.add('library__header');
+
+  const headingText = document.createElement('h2'),
+    descriptionText = document.createElement('p');
+
+  headingText.classList.add('library__header-title');
+  descriptionText.classList.add('library__header-text');
+
+  headingText.textContent = 'Game Library';
+  descriptionText.textContent = 'Browse our collection of casual mini-games';
+
+  pageTitle.append(headingText, descriptionText);
+
+  return pageTitle;
 }

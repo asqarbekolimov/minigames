@@ -1,0 +1,51 @@
+@use '../../styles/main.scss' as *;
+@use '../../styles/abstracts/mixins' as *;
+
+.library-section {
+  .container {
+    display: flex;
+    padding: size('5') size('15');
+    flex-direction: column;
+    align-items: flex-start;
+    // gap: size('8');
+    align-self: stretch;
+
+    @include respond-to('tablet') {
+      padding: size('3') size('5');
+    }
+    @include respond-to('mobile') {
+      padding: size('2');
+    }
+  }
+}
+
+.library__header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: size('1');
+
+  &-title {
+    font-size: font-size('display-lg');
+    font-weight: font-weight('bold');
+
+    @include respond-to('tablet') {
+      font-size: font-size('display-md');
+    }
+    @include respond-to('mobile') {
+      font-size: font-size('display-sm');
+    }
+  }
+  &-text {
+    color: $on-bg;
+    font-size: font-size('body-lg');
+    font-weight: font-weight('medium');
+
+    @include respond-to('tablet') {
+      font-size: font-size('body-md');
+    }
+    @include respond-to('mobile') {
+      font-size: font-size('body-sm');
+    }
+  }
+}
