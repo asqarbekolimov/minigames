@@ -1,0 +1,192 @@
+@use '../../styles/main.scss' as *;
+
+.cards__container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: size('3');
+
+  @include respond-to('tablet') {
+    width: 100%;
+    grid-template-columns: 1fr;
+  }
+}
+
+.card__item {
+  display: flex;
+  align-items: center;
+  border-radius: radius('lg');
+  border: 2.5px solid $on-primary;
+  background: $white;
+  box-shadow: 4px 4px 0 0 $on-primary;
+
+  @include respond-to('mobile') {
+    flex-direction: column;
+  }
+
+  &-img {
+    width: 320px;
+    flex-shrink: 0;
+    align-self: stretch;
+
+    img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border-radius: radius('lg') 0 0 radius('lg');
+      object-fit: cover;
+      @include respond-to('mobile') {
+        border-radius: radius('lg') radius('lg') 0 0;
+      }
+    }
+    @include respond-to('tablet') {
+      width: 270px;
+    }
+    @include respond-to('mobile') {
+      width: 100%;
+    }
+  }
+  &-info {
+    display: flex;
+    justify-content: space-between;
+    flex-direction: column;
+    gap: size('1');
+    height: 100%;
+    padding: size('2');
+    @include respond-to('mobile') {
+      gap: size('2');
+    }
+  }
+
+  &-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: size('2');
+
+    &-title {
+      display: flex;
+      align-items: center;
+      gap: size('2');
+
+      @include respond-to('mobile') {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .game__name {
+        font-size: font-size('headline-md');
+        font-weight: font-weight('bold');
+        @include respond-to('tablet') {
+          font-size: font-size('headline-sm');
+        }
+      }
+
+      .game__category {
+        padding: size('05') size('1');
+        border-radius: radius('xl');
+        border: 1.5px solid $on-primary;
+        background: $secondary;
+        box-shadow: inset 0 0 0 1.5px $on-primary;
+        font-size: font-size('label-md');
+        font-weight: font-weight('bold');
+        text-transform: capitalize;
+      }
+    }
+    .game__price {
+      font-size: font-size('headline-md');
+      font-weight: font-weight('bold');
+      @include respond-to('mobile') {
+        display: none;
+      }
+      &.number {
+        color: $on-primary;
+      }
+
+      &.string {
+        color: $price-free;
+      }
+    }
+  }
+
+  &-body {
+    color: $on-bg;
+    font-size: font-size('body-md');
+    font-weight: font-weight('medium');
+    line-height: 140%; /* 22.4px */
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+  }
+
+  &-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    @include respond-to('mobile') {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: size('2');
+    }
+    &-ratings {
+      display: flex;
+      align-items: center;
+      gap: size('3');
+
+      @include respond-to('mobile') {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      .game__price {
+        display: none;
+
+        font-size: font-size('headline-md');
+        font-weight: font-weight('bold');
+        @include respond-to('mobile') {
+          display: block;
+        }
+        &.number {
+          color: $on-primary;
+        }
+
+        &.string {
+          color: $price-free;
+        }
+      }
+
+      .ratings__item {
+        display: flex;
+        align-items: center;
+        gap: size('05');
+        font-size: font-size('label-lg');
+        font-weight: font-weight('bold');
+      }
+      .ratings__count {
+        display: flex;
+        align-items: center;
+        gap: size('2');
+      }
+    }
+  }
+}
+
+.detail-buttton {
+  padding: btn-padding('regular');
+  border-radius: radius('sm');
+  box-shadow: inset 0 0 0 2px $black;
+  font-size: font-size('label-lg');
+  font-weight: font-weight('bold');
+  transition: all linear 0.3s;
+  background-color: $primary;
+
+  &:hover {
+    background-color: $primary-high;
+  }
+
+  @include respond-to('mobile') {
+    width: 100%;
+  }
+}

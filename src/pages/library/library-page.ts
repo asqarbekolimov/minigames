@@ -1,5 +1,6 @@
 import { createLibraryFilter } from '@/components/library-filter/library-filter';
 import './library-page.scss';
+import { createGameCards } from '@/components/game-cards/game-cards';
 
 export function createLibraryPage(): HTMLElement {
   const main = document.createElement('main'),
@@ -17,11 +18,14 @@ export function createLibraryPage(): HTMLElement {
 }
 
 function renderLibraryPageContents(): HTMLElement {
-  const contents = document.createElement('div');
+  const contents = document.createElement('div'),
+    paginationControl = document.createElement('div');
 
   contents.classList.add('library__contents');
 
-  contents.append(libraryPageTitle(), createLibraryFilter());
+  paginationControl.classList.add('pagination__control');
+
+  contents.append(libraryPageTitle(), createLibraryFilter(), createGameCards(), paginationControl);
 
   return contents;
 }
