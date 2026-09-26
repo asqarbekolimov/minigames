@@ -335,12 +335,13 @@
     color: $on-bg-footer;
     font-size: font-size('body-lg');
     font-weight: font-weight('medium');
+    border-bottom: 2px solid transparent;
 
     &.active {
       color: $primary;
       font-weight: font-weight('bold');
       &:hover {
-        border-bottom: none;
+        border-bottom: 2px solid transparent;
       }
     }
     &:hover {
