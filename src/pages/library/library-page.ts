@@ -59,7 +59,7 @@ function createPaginationControl() {
   let currentPage = 1;
 
   const selectPage = (page: number) => {
-    if (page < 1 || page > pageCount || page === currentPage) {
+    if (page === currentPage || page < 1 || page > pageCount) {
       return;
     }
 
@@ -110,7 +110,7 @@ function createPageControl(
 
 function createArrowControl(
   direction: 'previous' | 'next',
-  disabled: boolean,
+  isDisabled: boolean,
   onClick: () => void,
 ): HTMLButtonElement {
   const arrowControl = document.createElement('button');
@@ -118,7 +118,7 @@ function createArrowControl(
 
   arrowControl.type = 'button';
   arrowControl.classList.add('pagination__button', 'pagination__arrow-button');
-  arrowControl.disabled = disabled;
+  arrowControl.disabled = isDisabled;
   arrowControl.setAttribute('aria-label', direction === 'previous' ? 'Previous page' : 'Next page');
   arrow.classList.add('pagination__arrow', direction);
   arrow.setAttribute('aria-hidden', 'true');
