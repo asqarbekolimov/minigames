@@ -66,7 +66,7 @@ function cardsItem(gameItems: GameCardI[]): HTMLElement {
             </div>
             <div class="game__price ${priceClass}">${gameItem.price}</div>
           </div>
-          <button class="detail-buttton">Details</button>
+          <button class="detail-button" type="button" data-open-game-details>Details</button>
         </div>
       </div>
 
