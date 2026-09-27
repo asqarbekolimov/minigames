@@ -36,7 +36,7 @@ function libraryPageTitle() {
   const pageTitle = document.createElement('div');
   pageTitle.classList.add('library__header');
 
-  const headingText = document.createElement('h2'),
+  const headingText = document.createElement('h1'),
     descriptionText = document.createElement('p');
 
   headingText.classList.add('library__header-title');

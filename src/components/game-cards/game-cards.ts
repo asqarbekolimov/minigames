@@ -38,7 +38,7 @@ function cardsItem(gameItems: GameCardI[]): HTMLElement {
 
     card.innerHTML = `
       <div class="card__item-img">
-        <img src=${gameItem.cardImage} alt=${gameItem.name}/>
+        <img src="${gameItem.cardImage}" alt="${gameItem.name}"/>
       </div>
       <div class="card__item-info">
         <div class="card__item-header">
