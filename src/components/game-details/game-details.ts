@@ -20,7 +20,7 @@ export function createGameDetails(): HTMLElement {
   page.classList.add('game-details-page');
 
   page.innerHTML = `
-    <article class="game-details" role="dialog" aria-modal="true" aria-labelledby="game-details-title">
+    <div class="game-details" role="dialog" aria-modal="true" aria-labelledby="game-details-title">
       <div class="game-details__hero">
         <img class="game-details__hero-image" src="/assets/images/games/tukoni-forest-keepers-hero.jpg" alt="Tukoni: Forest Keepers cover art" />
         <button class="game-details__close" type="button" aria-label="Close dialog">${closeIcon}</button>
@@ -83,7 +83,7 @@ export function createGameDetails(): HTMLElement {
           <ul class="comments" data-game-comments></ul>
         </section>
       </div>
-    </article>
+    </div>
   `;
 
   setupDismiss(page);
