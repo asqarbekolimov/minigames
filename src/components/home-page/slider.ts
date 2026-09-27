@@ -202,8 +202,7 @@ export function createSliderSection(): HTMLElement {
       const absolute = Math.abs(distance);
       const width = widthForDistance(absolute, sizes);
       const center = Math.sign(distance) * centerForDistance(absolute, sizes);
-      const showInfo =
-        width >= INFO_MIN_WIDTH || (isDesktop && absolute < INFO_MAX_DISTANCE);
+      const showInfo = width >= INFO_MIN_WIDTH || (isDesktop && absolute < INFO_MAX_DISTANCE);
 
       card.style.width = `${width}px`;
       card.style.transform = `translate(-50%, -50%) translateX(${center}px)`;
