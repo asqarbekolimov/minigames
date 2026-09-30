@@ -21,3 +21,19 @@ $breakpoints: (
     }
   }
 }
+
+@mixin stable-weight($weight: 700) {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+
+  &::after {
+    content: attr(data-text);
+    font-weight: $weight;
+    height: 0;
+    overflow: hidden;
+    visibility: hidden;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+}

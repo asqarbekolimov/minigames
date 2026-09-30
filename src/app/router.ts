@@ -1,57 +1,43 @@
 import { createAppLayout } from '@/components/layout/app-layout';
-import { createHomePage } from '@/pages/';
-import { createAuthForm } from '@/components/auth/auth-form';
+import { createHomePage } from '@/pages';
+import { createLibraryPage } from '@/pages/library/library-page';
 
-function renderApp(root: HTMLElement) {
-  const layout = createAppLayout(createHomePage());
-  let loginModal: HTMLElement | undefined;
+type RouteView = () => HTMLElement;
 
-  const closeLoginModal = () => {
-    const modal = loginModal;
-    if (!modal || modal.classList.contains('auth-page--closing')) return;
+const routes: Record<string, RouteView> = {
+  home: createHomePage,
+  library: () => createLibraryPage(),
+};
 
-    if (globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      modal.remove();
-      loginModal = undefined;
-      document.body.classList.remove('auth-modal-open');
-      return;
-    }
+const defaultRoute = 'home';
 
-    const finishClose = () => {
-      if (loginModal !== modal) return;
-      clearTimeout(closeTimer);
-      modal.removeEventListener('animationend', handleAnimationEnd);
-      modal.remove();
-      loginModal = undefined;
-      document.body.classList.remove('auth-modal-open');
-    };
+function renderApp(root: HTMLElement): void {
+  const layout = createAppLayout();
+  root.replaceChildren(layout.element);
 
-    const handleAnimationEnd = (event: AnimationEvent) => {
-      if (event.target === modal) finishClose();
-    };
+  let currentRoute = '';
 
-    modal.classList.add('auth-page--closing');
-    modal.addEventListener('animationend', handleAnimationEnd);
-    const closeTimer = setTimeout(finishClose, 200);
+  const render = (route: string): void => {
+    const resolved = Object.hasOwn(routes, route) ? route : defaultRoute;
+    if (resolved === currentRoute) return;
+
+    currentRoute = resolved;
+    layout.content.replaceChildren(routes[resolved]());
+    globalThis.dispatchEvent(new CustomEvent('route-change', { detail: { route: resolved } }));
   };
 
-  document.addEventListener('keydown', (event) => {
-    if (loginModal && (event.key === 'Escape' || event.key === 'Esc')) closeLoginModal();
+  document.addEventListener('click', (event) => {
+    if (!(event.target instanceof Element)) return;
+
+    const link = event.target.closest<HTMLAnchorElement>('[data-route]');
+    const route = link?.dataset.route;
+    if (!route) return;
+
+    event.preventDefault();
+    render(route);
   });
 
-  const openAuthModal = (mode: 'login' | 'register' = 'login') => {
-    if (loginModal) return;
-    loginModal = createAuthForm(mode);
-    layout.append(loginModal);
-    document.body.classList.add('auth-modal-open');
-    loginModal.addEventListener('login-modal-close', closeLoginModal, { once: true });
-  };
-
-  globalThis.addEventListener('open-auth-modal', (event) => {
-    const mode = (event as CustomEvent<'login' | 'register'>).detail;
-    openAuthModal(mode);
-  });
-  root.replaceChildren(layout);
+  render(defaultRoute);
 }
 
 export default renderApp;
