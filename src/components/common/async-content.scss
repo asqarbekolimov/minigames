@@ -1,0 +1,234 @@
+@use '../../styles/main.scss' as *;
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.async-content {
+  width: 100%;
+}
+
+.skeleton {
+  display: grid;
+  width: 100%;
+  gap: size('3');
+
+  &__item {
+    display: flex;
+    flex-direction: column;
+    gap: size('1');
+  }
+
+  &__line {
+    display: block;
+    width: 100%;
+    height: 14px;
+    border-radius: radius('sm');
+
+    &--sm {
+      width: 40%;
+    }
+
+    &--md {
+      width: 65%;
+    }
+
+    &--lg {
+      width: 85%;
+      height: 20px;
+    }
+  }
+
+  &__block {
+    display: block;
+    width: 100%;
+    height: 150px;
+    border-radius: radius('md');
+  }
+
+  &__line,
+  &__block {
+    background: linear-gradient(90deg, $secondary 25%, $surface 50%, $secondary 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.4s ease-in-out infinite;
+  }
+
+  &--table {
+    gap: 0;
+    padding: size('3');
+    border: 2.5px solid $on-primary;
+    border-radius: radius('lg');
+    background: $white;
+    box-shadow: shadow('level-2');
+
+    .skeleton__item {
+      display: grid;
+      grid-template-columns: 60px 2fr 1fr 1.2fr 1fr;
+      align-items: center;
+      gap: size('2');
+      padding: size('2') 0;
+      border-bottom: 1px solid $outline;
+
+      &:last-child {
+        border-bottom: 0;
+      }
+    }
+  }
+
+  &--cards {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+
+    .skeleton__item {
+      padding: size('2');
+      border: 2.5px solid $on-primary;
+      border-radius: radius('lg');
+      background: $white;
+      box-shadow: shadow('level-1');
+    }
+  }
+
+  &--slider {
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(200px, 1fr);
+    overflow: hidden;
+
+    .skeleton__item {
+      padding: size('2');
+      border: 2.5px solid $on-primary;
+      border-radius: radius('lg');
+      background: $white;
+      box-shadow: shadow('level-1');
+    }
+
+    .skeleton__block {
+      height: 220px;
+    }
+  }
+
+  &--details {
+    .skeleton__item {
+      gap: size('2');
+    }
+
+    .skeleton__block--hero {
+      height: 260px;
+      border-radius: radius('lg');
+    }
+  }
+
+  &--text {
+    gap: size('2');
+
+    .skeleton__item {
+      gap: size('1');
+    }
+  }
+
+  @include respond-to('mobile') {
+    &--table .skeleton__item {
+      grid-template-columns: 40px 2fr 1fr;
+    }
+
+    &--cards {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: size('2');
+  width: 100%;
+  padding: size('3');
+  border: 2.5px solid $error;
+  border-radius: radius('lg');
+  background: rgba($error, 0.08);
+  color: $on-primary;
+  box-shadow: 4px 4px 0 0 $error;
+
+  &__icon {
+    display: inline-flex;
+    flex-shrink: 0;
+    color: $error;
+
+    svg {
+      width: 24px;
+      height: 24px;
+    }
+  }
+
+  &__message {
+    flex: 1;
+    margin: 0;
+    font-size: font-size('body-md');
+    font-weight: font-weight('medium');
+    line-height: 140%;
+  }
+
+  &__retry {
+    flex-shrink: 0;
+    padding: btn-padding('regular');
+    border-radius: radius('sm');
+    background: $error;
+    box-shadow: inset 0 0 0 2px $on-primary;
+    color: $white;
+    font-size: font-size('label-lg');
+    font-weight: font-weight('bold');
+    cursor: pointer;
+    transition: filter 0.2s linear;
+
+    &:hover {
+      filter: brightness(0.9);
+    }
+  }
+
+  @include respond-to('mobile') {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: size('1');
+  width: 100%;
+  padding: size('6') size('3');
+  border: 2.5px dashed $outline-variant;
+  border-radius: radius('lg');
+  background: $surface;
+  color: $on-bg;
+  text-align: center;
+
+  &__icon {
+    display: inline-flex;
+    color: $on-bg-low;
+
+    svg {
+      width: 40px;
+      height: 40px;
+    }
+  }
+
+  &__title {
+    margin: 0;
+    color: $on-primary;
+    font-size: font-size('headline-sm');
+    font-weight: font-weight('bold');
+  }
+
+  &__message {
+    max-width: 420px;
+    margin: 0;
+    font-size: font-size('body-md');
+    line-height: 140%;
+  }
+}
