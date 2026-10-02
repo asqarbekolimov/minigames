@@ -36,8 +36,7 @@ export interface AsyncContentController {
   reload: () => Promise<void>;
 }
 
-const DEFAULT_ERROR_MESSAGE =
-  'Something went wrong while loading this section. Please try again.';
+const DEFAULT_ERROR_MESSAGE = 'Something went wrong while loading this section. Please try again.';
 const DEFAULT_EMPTY_TITLE = 'Nothing here yet';
 const DEFAULT_EMPTY_MESSAGE = 'No items match the current criteria.';
 
@@ -177,9 +176,7 @@ function isEmptyData<T>(data: T): boolean {
   return Array.isArray(data) && data.length === 0;
 }
 
-export function createAsyncContent<T>(
-  options: AsyncContentOptions<T>,
-): AsyncContentController {
+export function createAsyncContent<T>(options: AsyncContentOptions<T>): AsyncContentController {
   const element = document.createElement('div');
   element.classList.add('async-content');
 
@@ -209,9 +206,7 @@ export function createAsyncContent<T>(
   const showError = (error: unknown): void => {
     setState('error');
 
-    const message = options.errorMessage
-      ? options.errorMessage(error)
-      : getErrorMessage(error);
+    const message = options.errorMessage ? options.errorMessage(error) : getErrorMessage(error);
 
     element.replaceChildren(
       createErrorBanner({
