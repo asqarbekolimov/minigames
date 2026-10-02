@@ -4,8 +4,8 @@ import './home-page.scss';
 import { createSliderSection } from '@/components/home-page/slider';
 import { createTopPlayers } from '@/components/home-page/top-player';
 import { createCtaSection } from '@/components/home-page/cta';
-import { getGames } from '@/services/api';
-import type { GameCardI } from '@/utils/type';
+import { getGames, getLeaderboard } from '@/services/api';
+import type { GameCardI, LeaderboardPlayerI } from '@/utils/type';
 
 export function createHomePage(): HTMLElement {
   const homePage = document.createElement('main');
@@ -13,7 +13,7 @@ export function createHomePage(): HTMLElement {
   homePage.append(
     createHeroSection(),
     createFeaturedSlider(),
-    createTopPlayers(),
+    createLeaderboard(),
     createCtaSection(),
   );
 
@@ -26,12 +26,26 @@ async function loadFeaturedGames(): Promise<GameCardI[]> {
   return response.data;
 }
 
+async function loadTopPlayers(): Promise<LeaderboardPlayerI[]> {
+  const response = await getLeaderboard();
+
+  return response.data;
+}
+
 function renderSlider(games: GameCardI[]): HTMLElement {
   return createSliderSection(games);
 }
 
+function renderTopPlayers(players: LeaderboardPlayerI[]): HTMLElement {
+  return createTopPlayers(players);
+}
+
 function renderSliderSkeleton(): Node {
   return createSkeleton({ variant: 'slider', count: 5 });
+}
+
+function renderTableSkeleton(): Node {
+  return createSkeleton({ variant: 'table', count: 5 });
 }
 
 function getErrorMessage(error: unknown): string {
@@ -39,7 +53,7 @@ function getErrorMessage(error: unknown): string {
     return error.message;
   }
 
-  return 'Failed to load games.';
+  return 'Something went wrong. Please try again.';
 }
 
 function createFeaturedSlider(): HTMLElement {
@@ -55,4 +69,19 @@ function createFeaturedSlider(): HTMLElement {
   slider.reload();
 
   return slider.element;
+}
+
+function createLeaderboard(): HTMLElement {
+  const leaderboard = createAsyncContent<LeaderboardPlayerI[]>({
+    load: loadTopPlayers,
+    render: renderTopPlayers,
+    renderSkeleton: renderTableSkeleton,
+    errorMessage: getErrorMessage,
+    retryLabel: 'Try again',
+    empty: { title: 'No players yet', message: 'Play a game to appear on the leaderboard.' },
+  });
+
+  leaderboard.reload();
+
+  return leaderboard.element;
 }
