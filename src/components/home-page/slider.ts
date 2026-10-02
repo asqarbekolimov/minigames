@@ -1,9 +1,4 @@
-interface SliderGameI {
-  title: string;
-  image: string;
-  rating: number;
-  likes: number;
-}
+import type { GameCardI } from '@/utils/type';
 
 interface SliderSizesI {
   featured: number;
@@ -11,63 +6,6 @@ interface SliderSizesI {
   peek: number;
   gap: number;
 }
-
-const FEATURED_GAMES: SliderGameI[] = [
-  {
-    title: 'Vacation Cafe Simulator',
-    image: '/assets/images/games/vacation-cafe-simulator-card.jpg',
-    rating: 4.8,
-    likes: 28_750,
-  },
-  {
-    title: 'Winter Burrow',
-    image: '/assets/images/games/winter-burrow-card.jpg',
-    rating: 4.9,
-    likes: 32_400,
-  },
-  {
-    title: 'Shelve the Potions!',
-    image: '/assets/images/games/shelve-the-potions-card.jpg',
-    rating: 4.7,
-    likes: 21_300,
-  },
-  {
-    title: 'Heartopia',
-    image: '/assets/images/games/heartopia-card.jpg',
-    rating: 4.6,
-    likes: 46_800,
-  },
-  {
-    title: 'Palia',
-    image: '/assets/images/games/palia-card.jpg',
-    rating: 4.8,
-    likes: 89_500,
-  },
-  {
-    title: 'Cat Mail Co.',
-    image: '/assets/images/games/cat-mail-co-card.jpg',
-    rating: 4.9,
-    likes: 38_200,
-  },
-  {
-    title: 'Tiny Glade',
-    image: '/assets/images/games/tiny-glade-card.jpg',
-    rating: 4.9,
-    likes: 67_300,
-  },
-  {
-    title: 'Tailside: Cozy Cafe Sim',
-    image: '/assets/images/games/tailside-cozy-cafe-sim-card.jpg',
-    rating: 4.8,
-    likes: 35_600,
-  },
-  {
-    title: 'ISLANDERS: New Shores',
-    image: '/assets/images/games/islanders-new-shores-card.jpg',
-    rating: 4.9,
-    likes: 54_200,
-  },
-];
 
 const AUTOPLAY_DELAY = 4000;
 const INFO_MIN_WIDTH = 288;
@@ -131,25 +69,25 @@ function measureSizes(slider: HTMLElement): SliderSizesI {
   };
 }
 
-function createCard(game: SliderGameI): HTMLElement {
+function createCard(game: GameCardI): HTMLElement {
   const card = document.createElement('article');
   card.classList.add('game-card');
   card.innerHTML = `
-    <img class="game-card__image" src="${game.image}" alt="" loading="lazy" decoding="async">
+    <img class="game-card__image" src="${game.cardImage}" alt="${game.name}" loading="lazy" decoding="async">
     <div class="game-card__overlay">
-      <h3 class="game-card__title">${game.title}</h3>
+      <h3 class="game-card__title">${game.name}</h3>
       <div class="game-card__stats">
         <span><span class="game-card__star" aria-hidden="true">${starIcon}</span>${game.rating.toFixed(1)}</span>
-        <span><span class="game-card__heart" aria-hidden="true">${heartIcon}</span>${formatLikes(game.likes)}</span>
+        <span><span class="game-card__heart" aria-hidden="true">${heartIcon}</span>${formatLikes(game.likesCount)}</span>
       </div>
     </div>
-    <button class="game-card__trigger" type="button" aria-label="View details for ${game.title}" data-open-game-details></button>
+    <button class="game-card__trigger" type="button" aria-label="View details for ${game.name}" data-open-game-details></button>
   `;
 
   return card;
 }
 
-export function createSliderSection(): HTMLElement {
+export function createSliderSection(games: GameCardI[]): HTMLElement {
   const slider = document.createElement('section');
   slider.classList.add('section__slider');
   slider.innerHTML = `
@@ -177,7 +115,7 @@ export function createSliderSection(): HTMLElement {
   `;
 
   const inner = slider.querySelector<HTMLElement>('.slider__inner');
-  const cards = FEATURED_GAMES.map((game) => createCard(game));
+  const cards = games.map((game) => createCard(game));
   inner?.append(...cards);
 
   const count = cards.length;
