@@ -1,30 +1,39 @@
 import { createAppLayout } from '@/components/layout/app-layout';
 import { createHomePage } from '@/pages';
 import { createLibraryPage } from '@/pages/library/library-page';
+import { createNotFoundPage } from '@/pages/not-found/not-found-page';
 
-type RouteName = 'home' | 'library';
+type RouteName = 'home' | 'library' | 'not-found';
 type RouteView = () => HTMLElement;
 
 const routes: Record<RouteName, RouteView> = {
   home: createHomePage,
   library: createLibraryPage,
+  'not-found': createNotFoundPage,
 };
 
 const routePaths: Record<RouteName, string> = {
   home: '/',
   library: '/library',
+  'not-found': '/404',
 };
 
 function isRouteName(value: string | undefined): value is RouteName {
-  return value === 'home' || value === 'library';
+  return value !== undefined && Object.hasOwn(routes, value);
 }
 
 function pathToRoute(pathname: string): RouteName {
-  if (pathname === '/library') {
+  const normalized = pathname.replace(/\/+$/, '') || '/';
+
+  if (normalized === '/library') {
     return 'library';
   }
 
-  return 'home';
+  if (normalized === '/' || normalized === '/home') {
+    return 'home';
+  }
+
+  return 'not-found';
 }
 
 function renderApp(root: HTMLElement): void {

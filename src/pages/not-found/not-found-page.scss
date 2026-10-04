@@ -1,0 +1,76 @@
+@use '../../styles/main.scss' as *;
+
+.not-found {
+  &__section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    padding: size('8') size('3');
+  }
+
+  &__container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: size('2');
+    text-align: center;
+  }
+
+  &__code {
+    margin: 0;
+    color: $primary;
+    font-size: clamp(72px, 18vw, 160px);
+    font-weight: font-weight('extra-bold');
+    line-height: 1;
+    text-shadow: 4px 4px 0 $on-primary;
+  }
+
+  &__title {
+    margin: 0;
+    color: $on-primary;
+    font-size: font-size('display-md');
+    font-weight: font-weight('bold');
+
+    @include respond-to('mobile') {
+      font-size: font-size('display-sm');
+    }
+  }
+
+  &__text {
+    max-width: 520px;
+    margin: 0;
+    color: $on-bg;
+    font-size: font-size('body-lg');
+    line-height: 140%;
+
+    @include respond-to('mobile') {
+      font-size: font-size('body-md');
+    }
+  }
+
+  &__path {
+    color: $on-primary;
+    font-weight: font-weight('bold');
+    overflow-wrap: anywhere;
+  }
+
+  &__button {
+    margin-top: size('2');
+    padding: btn-padding('lg');
+    border-radius: radius('sm');
+    background: $primary;
+    box-shadow:
+      inset 0 0 0 2px $on-primary,
+      4px 4px 0 0 $on-primary;
+    color: $on-primary;
+    font-size: font-size('label-xl');
+    font-weight: font-weight('bold');
+    text-decoration: none;
+    transition: background-color 0.2s linear;
+
+    &:hover {
+      background: $primary-high;
+    }
+  }
+}
