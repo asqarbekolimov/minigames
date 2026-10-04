@@ -211,11 +211,17 @@ function createSortDropdown(onSelect: (value: GameSort) => void): HTMLElement {
   }
 
   const selectOption = (value: GameSort) => {
+    const hasChanged = value !== selectedValue;
+
     selectedValue = value;
-    renderMenu();
-    updateLabel();
+
+    if (hasChanged) {
+      renderMenu();
+      updateLabel();
+      onSelect(value);
+    }
+
     setOpen(false);
-    onSelect(value);
   };
 
   trigger.addEventListener('click', () => {
