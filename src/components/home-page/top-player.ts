@@ -1,67 +1,68 @@
+import type { LeaderboardPlayerI } from '@/utils/type';
 import '@/styles/components/player-table.scss';
 
-const players = [
-  {
-    rank: 1,
-    initials: 'AP',
-    name: 'Alex_Pro99',
-    gamesPlayed: 142,
-    totalScore: '94,250',
-    streak: '12 days',
-    favoriteGame: 'Heartopia',
-    avatarColor: '#ffd02b',
-    rankColor: '#ffd02b',
-  },
-  {
-    rank: 2,
-    initials: 'CG',
-    name: 'CozyGamer_x',
-    gamesPlayed: 118,
-    totalScore: '81,400',
-    streak: '8 days',
-    favoriteGame: 'Cat Mail Co.',
-    avatarColor: '#a3e2c9',
-    rankColor: '#242145',
-  },
-  {
-    rank: 3,
-    initials: 'MM',
-    name: 'MatchMaster',
-    gamesPlayed: 98,
-    totalScore: '72,110',
-    streak: '5 days',
-    favoriteGame: 'Tiny Glade',
-    avatarColor: '#bce3ff',
-    rankColor: '#242145',
-  },
-  {
-    rank: 4,
-    initials: 'BP',
-    name: 'BubblePop',
-    gamesPlayed: 87,
-    totalScore: '65,900',
-    streak: '3 days',
-    favoriteGame: 'Whisper of the House',
-    avatarColor: '#ffc6ff',
-    rankColor: '#242145',
-  },
-  {
-    rank: 5,
-    initials: 'SG',
-    name: 'SudokuGod',
-    gamesPlayed: 74,
-    totalScore: '59,320',
-    streak: '2 days',
-    favoriteGame: 'Cat Chess',
-    avatarColor: '#e8dff5',
-    rankColor: '#242145',
-  },
-];
+const AVATAR_COLORS = ['#ffd02b', '#a3e2c9', '#bce3ff', '#ffc6ff', '#e8dff5'];
+const GOLD_COLOR = '#ffd02b';
+const DARK_COLOR = '#242145';
 
-export function createTopPlayers(): HTMLElement {
+function getInitials(name: string): string {
+  const parts = name.split(/[_\s]+/).filter(Boolean);
+
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+
+  return name.slice(0, 2).toUpperCase();
+}
+
+function formatScore(score: number): string {
+  return new Intl.NumberFormat('en-US').format(score);
+}
+
+function getAvatarColor(index: number): string {
+  return AVATAR_COLORS[index % AVATAR_COLORS.length];
+}
+
+function createPlayerRow(player: LeaderboardPlayerI, index: number): string {
+  const initials = getInitials(player.playerName);
+  const avatarColor = getAvatarColor(index);
+  const rankColor = player.rank === 1 ? GOLD_COLOR : DARK_COLOR;
+  const totalScore = formatScore(player.totalScore);
+
+  return `
+    <tr class="top-players__row">
+      <td class="top-players__cell top-players__cell--rank">
+        <span class="top-players__rank" style="color: ${rankColor};">#${player.rank}</span>
+      </td>
+      <td class="top-players__cell top-players__cell--player">
+        <div class="top-players__player">
+          <span class="top-players__avatar" style="background-color: ${avatarColor};">${initials}</span>
+          <span class="top-players__name">${player.playerName}</span>
+        </div>
+      </td>
+      <td class="top-players__cell">
+        <span class="top-players__value">${player.gamesPlayed}</span>
+      </td>
+      <td class="top-players__cell">
+        <span class="top-players__value top-players__value--score">${totalScore}</span>
+      </td>
+      <td class="top-players__cell">
+        <span class="top-players__streak top-players__streak--full">🔥 ${player.streakDays} days</span>
+        <span class="top-players__streak top-players__streak--short">🔥 ${player.streakDays} d</span>
+      </td>
+      <td class="top-players__cell top-players__cell--favorite">
+        <span class="top-players__badge">${player.favoriteGameName}</span>
+      </td>
+    </tr>
+  `;
+}
+
+export function createTopPlayers(players: LeaderboardPlayerI[]): HTMLElement {
   const leaderboard = document.createElement('section');
 
   leaderboard.classList.add('section__leaderboard');
+
+  const rows = players.map((player, index) => createPlayerRow(player, index)).join('');
 
   leaderboard.innerHTML = `
     <div class="container">
@@ -100,36 +101,7 @@ export function createTopPlayers(): HTMLElement {
             </tr>
           </thead>
           <tbody class="top-players__tbody">
-            ${players
-              .map(
-                (player) => `
-                  <tr class="top-players__row">
-                    <td class="top-players__cell top-players__cell--rank">
-                      <span class="top-players__rank" style="color: ${player.rankColor};">#${player.rank}</span>
-                    </td>
-                    <td class="top-players__cell top-players__cell--player">
-                      <div class="top-players__player">
-                        <span class="top-players__avatar" style="background-color: ${player.avatarColor};">${player.initials}</span>
-                        <span class="top-players__name">${player.name}</span>
-                      </div>
-                    </td>
-                    <td class="top-players__cell">
-                      <span class="top-players__value">${player.gamesPlayed}</span>
-                    </td>
-                    <td class="top-players__cell">
-                      <span class="top-players__value top-players__value--score">${player.totalScore}</span>
-                    </td>
-                    <td class="top-players__cell">
-                      <span class="top-players__streak top-players__streak--full">🔥 ${player.streak}</span>
-                      <span class="top-players__streak top-players__streak--short">🔥 ${player.streak.replace(' days', ' d')}</span>
-                    </td>
-                    <td class="top-players__cell top-players__cell--favorite">
-                      <span class="top-players__badge">${player.favoriteGame}</span>
-                    </td>
-                  </tr>
-                `,
-              )
-              .join('')}
+            ${rows}
           </tbody>
         </table>
       </div>
