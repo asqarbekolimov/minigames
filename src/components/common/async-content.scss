@@ -130,6 +130,22 @@
     }
   }
 
+  &--chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: size('2');
+
+    .skeleton__item {
+      display: block;
+    }
+
+    .skeleton__block {
+      width: 104px;
+      height: 38px;
+      border-radius: radius('xl');
+    }
+  }
+
   @include respond-to('mobile') {
     &--table .skeleton__item {
       grid-template-columns: 40px 2fr 1fr;

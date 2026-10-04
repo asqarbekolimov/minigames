@@ -2,7 +2,7 @@ import './async-content.scss';
 
 export type AsyncState = 'loading' | 'error' | 'empty' | 'success';
 
-export type SkeletonVariant = 'table' | 'cards' | 'slider' | 'details' | 'text';
+export type SkeletonVariant = 'table' | 'cards' | 'slider' | 'details' | 'text' | 'chips';
 
 export interface SkeletonOptions {
   variant?: SkeletonVariant;
@@ -26,6 +26,7 @@ export interface AsyncContentOptions<T> {
   isEmpty?: (data: T) => boolean;
   renderSkeleton?: () => Node;
   errorMessage?: (error: unknown) => string;
+  onError?: (error: unknown) => void;
   empty?: EmptyStateOptions;
   retryLabel?: string;
 }
@@ -75,6 +76,10 @@ function createSkeletonItem(variant: SkeletonVariant): HTMLElement {
         <span class="skeleton__line"></span>
         <span class="skeleton__line skeleton__line--sm"></span>
       `;
+      break;
+    }
+    case 'chips': {
+      item.innerHTML = `<span class="skeleton__block"></span>`;
       break;
     }
     default: {
@@ -181,6 +186,7 @@ export function createAsyncContent<T>(options: AsyncContentOptions<T>): AsyncCon
   element.classList.add('async-content');
 
   let state: AsyncState = 'loading';
+  let activeRequest = 0;
 
   const setState = (nextState: AsyncState): void => {
     state = nextState;
@@ -205,6 +211,8 @@ export function createAsyncContent<T>(options: AsyncContentOptions<T>): AsyncCon
 
   const showError = (error: unknown): void => {
     setState('error');
+
+    options.onError?.(error);
 
     const message = options.errorMessage ? options.errorMessage(error) : getErrorMessage(error);
 
@@ -232,10 +240,14 @@ export function createAsyncContent<T>(options: AsyncContentOptions<T>): AsyncCon
   };
 
   async function reload(): Promise<void> {
+    const request = ++activeRequest;
     showLoading();
 
     try {
       const data = await options.load();
+
+      if (request !== activeRequest) return;
+
       const isEmpty = options.isEmpty ? options.isEmpty(data) : isEmptyData(data);
 
       if (isEmpty) {
@@ -245,6 +257,7 @@ export function createAsyncContent<T>(options: AsyncContentOptions<T>): AsyncCon
 
       showSuccess(data);
     } catch (error) {
+      if (request !== activeRequest) return;
       showError(error);
     }
   }

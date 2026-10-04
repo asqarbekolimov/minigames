@@ -114,9 +114,3 @@
     transform: rotate(45deg);
   }
 }
-
-@include respond-to('mobile') {
-  .pagination__page-button[data-page='4']:not(.active) {
-    display: none;
-  }
-}
