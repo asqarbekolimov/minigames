@@ -2,10 +2,10 @@ import './header.scss';
 import logoPath from '@/assets/icons/logo.svg';
 
 const navLinks = [
-  { route: 'home', name: 'Home' },
-  { route: 'library', name: 'Library' },
-  { route: 'tournaments', name: 'Tournaments' },
-  { route: 'community', name: 'Community' },
+  { route: 'home', name: 'Home', path: '/' },
+  { route: 'library', name: 'Library', path: '/library' },
+  { route: 'tournaments', name: 'Tournaments', path: '#' },
+  { route: 'community', name: 'Community', path: '#' },
 ];
 
 export function createHeader(): HTMLElement {
@@ -14,7 +14,7 @@ export function createHeader(): HTMLElement {
 
   const logo = document.createElement('a');
   logo.classList.add('header__logo');
-  logo.href = '#';
+  logo.href = '/';
   logo.dataset.route = 'home';
 
   const logoImg = document.createElement('img');
@@ -39,7 +39,7 @@ export function createHeader(): HTMLElement {
     navbarItem.classList.add('nav__item');
 
     const navLink = document.createElement('a');
-    navLink.href = '#';
+    navLink.href = link.path;
     navLink.dataset.route = link.route;
     navLink.dataset.text = link.name;
     navLink.textContent = link.name;
@@ -117,7 +117,7 @@ export function createHeader(): HTMLElement {
     mobileNavItem.classList.add('mobile_menu__item');
 
     const linkElement = document.createElement('a');
-    linkElement.href = '#';
+    linkElement.href = link.path;
     linkElement.dataset.route = link.route;
     linkElement.dataset.text = link.name;
     linkElement.textContent = link.name;
