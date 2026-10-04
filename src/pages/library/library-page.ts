@@ -1,12 +1,17 @@
-import { createLibraryFilter } from '@/components/library-filter/library-filter';
+import { createLibraryFilter, DEFAULT_SORT } from '@/components/library-filter/library-filter';
 import './library-page.scss';
 import { createGameCards } from '@/components/game-cards/game-cards';
 import { createAsyncContent, createSkeleton } from '@/components/common/async-content';
 import { showSnackbar } from '@/components/common/snackbar';
 import { getGames } from '@/services/api';
-import type { GameCardI } from '@/utils/type';
+import type { GameCardI, GamesQueryI } from '@/utils/type';
 
 const PAGE_SIZE = 6;
+
+interface CardsSectionController {
+  element: HTMLElement;
+  setQuery: (query: Partial<GamesQueryI>) => void;
+}
 
 export function createLibraryPage(): HTMLElement {
   const main = document.createElement('main'),
@@ -28,20 +33,21 @@ function renderLibraryPageContents(): HTMLElement {
 
   contents.classList.add('library__contents');
 
-  contents.append(
-    libraryPageTitle(),
-    createLibraryFilter(),
-    createCardsSection(),
-    createPaginationControl(),
-  );
+  const cards = createCardsSection({
+    category: 'all',
+    sort: DEFAULT_SORT,
+    page: 1,
+    limit: PAGE_SIZE,
+  });
+
+  const filter = createLibraryFilter({
+    onCategoryChange: (category) => cards.setQuery({ category, page: 1 }),
+    onSortChange: (sort) => cards.setQuery({ sort, page: 1 }),
+  });
+
+  contents.append(libraryPageTitle(), filter.element, cards.element, createPaginationControl());
 
   return contents;
-}
-
-async function loadGames(): Promise<GameCardI[]> {
-  const response = await getGames({ limit: PAGE_SIZE });
-
-  return response.data;
 }
 
 function renderCardsSkeleton(): Node {
@@ -56,9 +62,14 @@ function getErrorMessage(error: unknown): string {
   return 'Something went wrong. Please try again.';
 }
 
-function createCardsSection(): HTMLElement {
+function createCardsSection(initialQuery: GamesQueryI): CardsSectionController {
+  let query: GamesQueryI = { ...initialQuery };
+
   const cards = createAsyncContent<GameCardI[]>({
-    load: loadGames,
+    load: async () => {
+      const response = await getGames(query);
+      return response.data;
+    },
     render: createGameCards,
     renderSkeleton: renderCardsSkeleton,
     errorMessage: getErrorMessage,
@@ -71,7 +82,19 @@ function createCardsSection(): HTMLElement {
 
   void cards.reload();
 
-  return cards.element;
+  return {
+    element: cards.element,
+    setQuery: (nextQuery) => {
+      const hasChanged = Object.entries(nextQuery).some(
+        ([key, value]) => query[key as keyof GamesQueryI] !== value,
+      );
+
+      if (!hasChanged) return;
+
+      query = { ...query, ...nextQuery };
+      void cards.reload();
+    },
+  };
 }
 
 function libraryPageTitle() {

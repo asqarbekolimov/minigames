@@ -1,9 +1,16 @@
 import './library-filter.scss';
+import { createAsyncContent, createSkeleton } from '@/components/common/async-content';
+import { showSnackbar } from '@/components/common/snackbar';
+import { getCategories } from '@/services/api';
+import type { CategoryI, GameSort } from '@/utils/type';
 
-const chips = ['All Games', 'Puzzle', 'Card', 'Match', 'Farm', 'Strategy', 'Arcade'];
+export const DEFAULT_SORT: GameSort = 'rating-desc';
+
+const DEFAULT_CATEGORY = 'all';
+const CHIP_SKELETON_COUNT = 7;
 
 interface SortOptionI {
-  value: string;
+  value: GameSort;
   label: string;
 }
 
@@ -18,38 +25,115 @@ const chevronIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="
 
 const checkIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M2.5 7.5L5.5 10.5L11.5 3.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
-const DEFAULT_SORT = 'rating-desc';
-
-export function createLibraryFilter(): HTMLElement {
-  const filterSortBar = document.createElement('div');
-  const filterChipsContainer = document.createElement('div');
-
-  filterChipsContainer.classList.add('filter-chips');
-  filterSortBar.classList.add('filter-sort-bar');
-
-  const filterChips = chips.map((chip, index) => {
-    const chipButton = document.createElement('button');
-    chipButton.type = 'button';
-    chipButton.classList.add('chip-button');
-    chipButton.textContent = chip;
-
-    if (index === 0) chipButton.classList.add('active');
-
-    chipButton.addEventListener('click', () => {
-      const buttons = filterChipsContainer.querySelectorAll<HTMLElement>('.chip-button');
-      for (const button of buttons) button.classList.toggle('active', button === chipButton);
-    });
-
-    return chipButton;
-  });
-
-  filterChipsContainer.append(...filterChips);
-  filterSortBar.append(filterChipsContainer, createSortDropdown());
-
-  return filterSortBar;
+export interface LibraryFilterOptions {
+  onCategoryChange?: (category: string) => void;
+  onSortChange?: (sort: GameSort) => void;
 }
 
-function createSortDropdown(): HTMLElement {
+export interface LibraryFilterController {
+  element: HTMLElement;
+  getCategory: () => string;
+  getSort: () => GameSort;
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return 'Something went wrong. Please try again.';
+}
+
+export function createLibraryFilter(options: LibraryFilterOptions = {}): LibraryFilterController {
+  const filterSortBar = document.createElement('div');
+  filterSortBar.classList.add('filter-sort-bar');
+
+  let activeCategory = DEFAULT_CATEGORY;
+  let selectedSort: GameSort = DEFAULT_SORT;
+  let isInitialized = false;
+
+  const renderChips = (categories: CategoryI[]): Node[] => {
+    if (!isInitialized) {
+      isInitialized = true;
+
+      const defaultCategory = categories.find((category) => category.isDefault);
+      if (defaultCategory) {
+        activeCategory = defaultCategory.slug;
+        options.onCategoryChange?.(activeCategory);
+      }
+    }
+
+    const buttons = categories.map((category) => createChip(category, activeCategory));
+
+    for (const button of buttons) {
+      button.addEventListener('click', () => selectCategory(button.dataset.category ?? ''));
+    }
+
+    return buttons;
+  };
+
+  const selectCategory = (slug: string): void => {
+    if (slug === activeCategory || !slug) return;
+
+    activeCategory = slug;
+
+    const buttons = chips.element.querySelectorAll<HTMLButtonElement>('.chip-button');
+    for (const button of buttons) {
+      const isActive = button.dataset.category === slug;
+      button.classList.toggle('active', isActive);
+      button.setAttribute('aria-pressed', String(isActive));
+    }
+
+    options.onCategoryChange?.(slug);
+  };
+
+  const chips = createAsyncContent<CategoryI[]>({
+    load: async () => {
+      const response = await getCategories();
+      return response.data;
+    },
+    render: renderChips,
+    renderSkeleton: () => createSkeleton({ variant: 'chips', count: CHIP_SKELETON_COUNT }),
+    errorMessage: getErrorMessage,
+    retryLabel: 'Try again',
+    empty: { title: 'No categories yet', message: 'Categories will appear here soon.' },
+    onError: (error) => {
+      showSnackbar({ message: getErrorMessage(error), variant: 'error' });
+    },
+  });
+
+  chips.element.classList.add('filter-chips');
+
+  const sortDropdown = createSortDropdown((value) => {
+    selectedSort = value;
+    options.onSortChange?.(value);
+  });
+
+  filterSortBar.append(chips.element, sortDropdown);
+  void chips.reload();
+
+  return {
+    element: filterSortBar,
+    getCategory: () => activeCategory,
+    getSort: () => selectedSort,
+  };
+}
+
+function createChip(category: CategoryI, activeCategory: string): HTMLButtonElement {
+  const button = document.createElement('button');
+  const isActive = category.slug === activeCategory;
+
+  button.type = 'button';
+  button.classList.add('chip-button');
+  button.textContent = category.label;
+  button.dataset.category = category.slug;
+  button.classList.toggle('active', isActive);
+  button.setAttribute('aria-pressed', String(isActive));
+
+  return button;
+}
+
+function createSortDropdown(onSelect: (value: GameSort) => void): HTMLElement {
   const dropdown = document.createElement('div');
   dropdown.classList.add('sort-dropdown');
 
@@ -72,7 +156,7 @@ function createSortDropdown(): HTMLElement {
   menu.classList.add('sort-dropdown__menu');
   menu.setAttribute('role', 'listbox');
 
-  let selectedValue = DEFAULT_SORT;
+  let selectedValue: GameSort = DEFAULT_SORT;
 
   const createOption = (option: SortOptionI): HTMLLIElement => {
     const item = document.createElement('li');
@@ -126,11 +210,12 @@ function createSortDropdown(): HTMLElement {
     }
   }
 
-  const selectOption = (value: string) => {
+  const selectOption = (value: GameSort) => {
     selectedValue = value;
     renderMenu();
     updateLabel();
     setOpen(false);
+    onSelect(value);
   };
 
   trigger.addEventListener('click', () => {
@@ -142,7 +227,8 @@ function createSortDropdown(): HTMLElement {
 
     const item = event.target.closest<HTMLElement>('.sort-dropdown__option');
     const value = item?.dataset.value;
-    if (value) selectOption(value);
+    const option = sortOptions.find((candidate) => candidate.value === value);
+    if (option) selectOption(option.value);
   });
 
   renderMenu();
