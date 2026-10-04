@@ -1,0 +1,140 @@
+@use '../../styles/main.scss' as *;
+
+@keyframes snackbar-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes snackbar-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+.snackbar-region {
+  position: fixed;
+  right: size('3');
+  bottom: size('3');
+  z-index: z-index('snackbar');
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: size('1');
+  width: min(380px, calc(100vw - #{size('6')}));
+  pointer-events: none;
+
+  @include respond-to('mobile') {
+    right: size('2');
+    bottom: size('2');
+    left: size('2');
+    width: auto;
+  }
+}
+
+.snackbar {
+  display: flex;
+  align-items: center;
+  gap: size('2');
+  padding: size('2');
+  border: 2.5px solid $on-primary;
+  border-radius: radius('lg');
+  background: $white;
+  box-shadow: shadow('level-2');
+  color: $on-primary;
+  pointer-events: auto;
+  animation: snackbar-in 0.2s ease-out;
+
+  &--closing {
+    animation: snackbar-out 0.2s ease-in forwards;
+  }
+
+  &__icon {
+    display: inline-flex;
+    flex-shrink: 0;
+
+    svg {
+      width: 22px;
+      height: 22px;
+    }
+  }
+
+  &__message {
+    flex: 1;
+    margin: 0;
+    font-size: font-size('body-md');
+    font-weight: font-weight('medium');
+    line-height: 140%;
+  }
+
+  &__action {
+    flex-shrink: 0;
+    padding: size('05') size('1');
+    border: 0;
+    border-radius: radius('sm');
+    background: transparent;
+    color: $teriary;
+    font-size: font-size('label-lg');
+    font-weight: font-weight('bold');
+    text-transform: uppercase;
+    cursor: pointer;
+
+    &:hover {
+      background: $surface;
+    }
+  }
+
+  &__close {
+    display: inline-flex;
+    flex-shrink: 0;
+    padding: size('05');
+    border: 0;
+    border-radius: radius('sm');
+    background: transparent;
+    color: $on-bg-low;
+    cursor: pointer;
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    &:hover {
+      background: $surface;
+      color: $on-primary;
+    }
+  }
+
+  &--info .snackbar__icon {
+    color: $teriary;
+  }
+
+  &--success .snackbar__icon {
+    color: $price-free;
+  }
+
+  &--warning .snackbar__icon {
+    color: $primary-high;
+  }
+
+  &--error {
+    border-color: $error;
+    box-shadow: 4px 4px 0 0 $error;
+
+    .snackbar__icon {
+      color: $error;
+    }
+  }
+}

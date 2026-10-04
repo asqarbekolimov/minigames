@@ -1,6 +1,12 @@
 import { createLibraryFilter } from '@/components/library-filter/library-filter';
 import './library-page.scss';
 import { createGameCards } from '@/components/game-cards/game-cards';
+import { createAsyncContent, createSkeleton } from '@/components/common/async-content';
+import { showSnackbar } from '@/components/common/snackbar';
+import { getGames } from '@/services/api';
+import type { GameCardI } from '@/utils/type';
+
+const PAGE_SIZE = 6;
 
 export function createLibraryPage(): HTMLElement {
   const main = document.createElement('main'),
@@ -25,11 +31,47 @@ function renderLibraryPageContents(): HTMLElement {
   contents.append(
     libraryPageTitle(),
     createLibraryFilter(),
-    createGameCards(),
+    createCardsSection(),
     createPaginationControl(),
   );
 
   return contents;
+}
+
+async function loadGames(): Promise<GameCardI[]> {
+  const response = await getGames({ limit: PAGE_SIZE });
+
+  return response.data;
+}
+
+function renderCardsSkeleton(): Node {
+  return createSkeleton({ variant: 'cards', count: PAGE_SIZE });
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return 'Something went wrong. Please try again.';
+}
+
+function createCardsSection(): HTMLElement {
+  const cards = createAsyncContent<GameCardI[]>({
+    load: loadGames,
+    render: createGameCards,
+    renderSkeleton: renderCardsSkeleton,
+    errorMessage: getErrorMessage,
+    retryLabel: 'Try again',
+    empty: { title: 'No games found', message: 'Try adjusting your filters or check back soon.' },
+    onError: (error) => {
+      showSnackbar({ message: getErrorMessage(error), variant: 'error' });
+    },
+  });
+
+  void cards.reload();
+
+  return cards.element;
 }
 
 function libraryPageTitle() {

@@ -26,6 +26,7 @@ export interface AsyncContentOptions<T> {
   isEmpty?: (data: T) => boolean;
   renderSkeleton?: () => Node;
   errorMessage?: (error: unknown) => string;
+  onError?: (error: unknown) => void;
   empty?: EmptyStateOptions;
   retryLabel?: string;
 }
@@ -205,6 +206,8 @@ export function createAsyncContent<T>(options: AsyncContentOptions<T>): AsyncCon
 
   const showError = (error: unknown): void => {
     setState('error');
+
+    options.onError?.(error);
 
     const message = options.errorMessage ? options.errorMessage(error) : getErrorMessage(error);
 
