@@ -381,3 +381,18 @@ body.auth-modal-open {
     animation: none;
   }
 }
+
+.emailfield__error,
+.usernamefield__error,
+.passwordfield__error,
+.confirm-passwordfield__error {
+  color: $error;
+  font-size: font-size('label-md');
+  line-height: 1.4;
+}
+
+.login-field__control {
+  &.invalid {
+    border-color: $error;
+  }
+}
