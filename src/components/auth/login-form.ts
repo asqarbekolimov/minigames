@@ -189,8 +189,7 @@ function isValidLoginPassword(
   }
 
   if (passwordInput.value.length < 6) {
-    passwordErrorMessage!.textContent =
-      'Password must be at least 6 characters long.';
+    passwordErrorMessage!.textContent = 'Password must be at least 6 characters long.';
     for (const input of fieldControls) {
       if (input.getAttribute('aria-name') === 'password') {
         input.classList.add('invalid');
