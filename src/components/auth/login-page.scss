@@ -236,6 +236,20 @@ body.auth-modal-open {
   background-color: $surface;
 }
 
+.login-actions__submit-wrap {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+
+  .login-actions__submit {
+    width: 100%;
+  }
+
+  &:hover .login-actions__submit {
+    background-color: $primary-high;
+  }
+}
+
 .login-actions__submit {
   height: 52px;
   border-width: 2.5px;
@@ -244,6 +258,40 @@ body.auth-modal-open {
   color: $on-primary;
   &:hover {
     background-color: $primary-high;
+  }
+
+  &:disabled {
+    pointer-events: none;
+  }
+}
+
+@keyframes auth-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.login-actions__submit.is-loading,
+.login-actions__google.is-loading {
+  gap: size('1');
+}
+
+.login-actions__submit.is-loading::after,
+.login-actions__google.is-loading::after {
+  content: '';
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid $on-primary;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: auth-spin 0.7s linear infinite;
+}
+
+.auth-page--pending {
+  cursor: progress;
+
+  .login-dialog {
+    cursor: progress;
   }
 }
 
@@ -283,7 +331,6 @@ body.auth-modal-open {
   }
 }
 
-// Form switch animations (login ↔ register)
 @keyframes auth-form-out-left {
   from {
     opacity: 1;
@@ -379,5 +426,20 @@ body.auth-modal-open {
   .auth-form-slot--in-right,
   .login-dialog__header--animating {
     animation: none;
+  }
+}
+
+.emailfield__error,
+.usernamefield__error,
+.passwordfield__error,
+.confirm-passwordfield__error {
+  color: $error;
+  font-size: font-size('label-md');
+  line-height: 1.4;
+}
+
+.login-field__control {
+  &.invalid {
+    border-color: $error;
   }
 }

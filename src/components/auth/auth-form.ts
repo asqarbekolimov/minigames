@@ -1,6 +1,26 @@
+import type { User } from 'firebase/auth';
 import { createLoginForm } from '@/components/auth/login-form';
 import { createRegisterForm } from '@/components/auth/register-form';
+import { showSnackbar } from '@/components/common/snackbar';
+import {
+  getAuthErrorMessage,
+  isCanceledAuthError,
+  registerWithEmail,
+  signInWithEmail,
+  signInWithGoogle,
+} from '@/services/auth';
 import './login-page.scss';
+
+interface AuthSubmitDetail {
+  mode: 'login' | 'register';
+  email: string;
+  password: string;
+  username?: string;
+}
+
+function getDisplayName(user: User): string {
+  return user.displayName ?? user.email ?? 'player';
+}
 
 export function createAuthForm(initialMode: 'login' | 'register' = 'login'): HTMLElement {
   const form = document.createElement('div');
@@ -73,14 +93,12 @@ export function createAuthForm(initialMode: 'login' | 'register' = 'login'): HTM
     const oldPanel = formSlots[currentMode];
     const newPanel = formSlots[mode];
 
-    // Update tabs immediately for responsive feel
     for (const tab of tabs) {
       const isActive = tab.dataset.authTab === mode;
       tab.classList.toggle('auth-tabs__tab--active', isActive);
       tab.setAttribute('aria-selected', String(isActive));
     }
 
-    // Animate old panel out
     if (oldPanel) {
       oldPanel.classList.add(outClass);
 
@@ -89,7 +107,6 @@ export function createAuthForm(initialMode: 'login' | 'register' = 'login'): HTM
         oldPanel.classList.remove(outClass);
         oldPanel.toggleAttribute('hidden', true);
 
-        // Update content
         const isLogin = mode === 'login';
         if (title) title.textContent = isLogin ? 'Welcome Back!' : 'Create Your Account';
         if (copy)
@@ -100,7 +117,6 @@ export function createAuthForm(initialMode: 'login' | 'register' = 'login'): HTM
           footerCopy.textContent = isLogin ? "Don't have an account?" : 'Already have an account?';
         if (footerAction) footerAction.textContent = isLogin ? 'Register' : 'Login';
 
-        // Animate header text
         const header = form.querySelector('.login-dialog__header');
         if (header) {
           header.classList.remove('login-dialog__header--animating');
@@ -113,7 +129,6 @@ export function createAuthForm(initialMode: 'login' | 'register' = 'login'): HTM
           );
         }
 
-        // Show and populate new panel
         if (newPanel) {
           newPanel.replaceChildren(isLogin ? createLoginForm() : createRegisterForm());
           newPanel.toggleAttribute('hidden', false);
@@ -132,6 +147,108 @@ export function createAuthForm(initialMode: 'login' | 'register' = 'login'): HTM
     }
   };
 
+  let isAuthPending = false;
+  const pendingControls: Array<{
+    control: HTMLInputElement | HTMLButtonElement;
+    disabled: boolean;
+  }> = [];
+
+  const setPending = (isPending: boolean): void => {
+    isAuthPending = isPending;
+    form.classList.toggle('auth-page--pending', isPending);
+
+    const controls = form.querySelectorAll<HTMLInputElement | HTMLButtonElement>('input, button');
+
+    if (isPending) {
+      for (const control of controls) {
+        pendingControls.push({ control, disabled: control.disabled });
+        control.disabled = true;
+      }
+      return;
+    }
+
+    for (const { control, disabled } of pendingControls) {
+      control.disabled = disabled;
+    }
+    pendingControls.length = 0;
+  };
+
+  const requestClose = (): void => {
+    if (isAuthPending) return;
+    form.dispatchEvent(new Event('login-modal-close'));
+  };
+
+  const runAuthOperation = async (
+    operation: () => Promise<User>,
+    successMessage: (user: User) => string,
+    triggerButton?: HTMLButtonElement,
+  ): Promise<void> => {
+    if (isAuthPending) return;
+
+    setPending(true);
+    triggerButton?.classList.add('is-loading');
+    triggerButton?.setAttribute('aria-busy', 'true');
+
+    try {
+      const user = await operation();
+      triggerButton?.classList.remove('is-loading');
+      triggerButton?.removeAttribute('aria-busy');
+      setPending(false);
+
+      showSnackbar({ message: successMessage(user), variant: 'success' });
+      form.dispatchEvent(new Event('login-modal-close'));
+    } catch (error) {
+      triggerButton?.classList.remove('is-loading');
+      triggerButton?.removeAttribute('aria-busy');
+      setPending(false);
+
+      if (isCanceledAuthError(error)) {
+        showSnackbar({ message: 'Sign-in was canceled.', variant: 'info' });
+        return;
+      }
+
+      showSnackbar({ message: getAuthErrorMessage(error), variant: 'error' });
+    }
+  };
+
+  form.addEventListener('click', (event) => {
+    if (!(event.target instanceof Element)) return;
+
+    const googleButton = event.target.closest<HTMLButtonElement>('.login-actions__google');
+    if (!googleButton) return;
+    event.preventDefault();
+
+    void runAuthOperation(
+      () => signInWithGoogle(),
+      (user) => `Signed in as ${getDisplayName(user)}.`,
+      googleButton,
+    );
+  });
+
+  form.addEventListener('auth-submit', (event) => {
+    const detail = (event as CustomEvent<AuthSubmitDetail>).detail;
+    if (!detail) return;
+
+    const sourceForm = event.target instanceof HTMLFormElement ? event.target : undefined;
+    const submitButton =
+      sourceForm?.querySelector<HTMLButtonElement>('.login-actions__submit') ?? undefined;
+
+    if (detail.mode === 'login') {
+      void runAuthOperation(
+        () => signInWithEmail(detail.email, detail.password),
+        (user) => `Signed in as ${getDisplayName(user)}.`,
+        submitButton,
+      );
+      return;
+    }
+
+    void runAuthOperation(
+      () => registerWithEmail(detail.email, detail.password, detail.username ?? ''),
+      (user) => `Welcome, ${getDisplayName(user)}! Your account is ready.`,
+      submitButton,
+    );
+  });
+
   for (const tab of tabs) {
     tab.addEventListener('click', () => setMode(tab.dataset.authTab as 'login' | 'register'));
   }
@@ -139,10 +256,10 @@ export function createAuthForm(initialMode: 'login' | 'register' = 'login'): HTM
     setMode(footerAction.textContent === 'Register' ? 'register' : 'login'),
   );
   form.addEventListener('click', (event) => {
-    if (event.target === form) form.dispatchEvent(new Event('login-modal-close'));
+    if (event.target === form) requestClose();
   });
   form.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') form.dispatchEvent(new Event('login-modal-close'));
+    if (event.key === 'Escape') requestClose();
   });
   applyMode(initialMode);
 

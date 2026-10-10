@@ -27,6 +27,8 @@ export function createAppLayout(): AppLayout {
     const modal = loginModal;
     if (!modal || modal.classList.contains('auth-page--closing')) return;
 
+    if (modal.classList.contains('auth-page--pending')) return;
+
     if (shouldReduceMotion()) {
       modal.remove();
       loginModal = undefined;
