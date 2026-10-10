@@ -11,8 +11,9 @@
     "format": "prettier src --write",
     "format:check": "prettier src --check",
     "prepare": "husky",
-    "test": "vitest run --coverage",
-    "test:watch": "vitest --watch"
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
