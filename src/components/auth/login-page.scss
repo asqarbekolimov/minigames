@@ -265,6 +265,36 @@ body.auth-modal-open {
   }
 }
 
+@keyframes auth-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.login-actions__submit.is-loading,
+.login-actions__google.is-loading {
+  gap: size('1');
+}
+
+.login-actions__submit.is-loading::after,
+.login-actions__google.is-loading::after {
+  content: '';
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid $on-primary;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: auth-spin 0.7s linear infinite;
+}
+
+.auth-page--pending {
+  cursor: progress;
+
+  .login-dialog {
+    cursor: progress;
+  }
+}
+
 .login-actions__divider {
   display: flex;
   align-items: center;
@@ -301,7 +331,6 @@ body.auth-modal-open {
   }
 }
 
-// Form switch animations (login ↔ register)
 @keyframes auth-form-out-left {
   from {
     opacity: 1;

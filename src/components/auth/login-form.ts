@@ -51,9 +51,18 @@ export function createLoginForm(): HTMLFormElement {
       isValidLoginEmail(emailInput, emailErrorMessage, fieldControls) &&
       isValidLoginPassword(passwordInput, passwordErrorMessage, fieldControls);
 
-    if (!isValid) {
-      event.preventDefault();
-    }
+    if (!isValid || !emailInput || !passwordInput) return;
+
+    form.dispatchEvent(
+      new CustomEvent('auth-submit', {
+        bubbles: true,
+        detail: {
+          mode: 'login',
+          email: emailInput.value,
+          password: passwordInput.value,
+        },
+      }),
+    );
   });
   form.noValidate = true;
   return form;

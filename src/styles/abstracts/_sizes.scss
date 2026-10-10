@@ -29,7 +29,6 @@ $radius: (
   'full': 9999px,
 );
 
-// Button padding sizes
 $btn-padding: (
   'regular': 10px 20px,
   'sm': 16px 8px,
@@ -38,14 +37,12 @@ $btn-padding: (
   'icon': 8px,
 );
 
-// Shadow sizes
 $shadow: (
   'level-1': 4px 4px $on-primary,
   'level-2': 6px 6px $on-primary,
   'level-3': 8px 8px $on-primary,
 );
 
-// Z-index scale
 $z-index: (
   'base': 1,
   'dropdown': 10,

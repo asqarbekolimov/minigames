@@ -12,9 +12,7 @@ import type {
   PostCommentI,
 } from '@/utils/type';
 
-const API_BASE_URL = (
-  import.meta.env.VITE_API_BASE_URL ?? 'https://faxb76kxra.execute-api.eu-central-1.amazonaws.com'
-).replace(/\/$/, '');
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL!.replace(/\/$/, '');
 
 export class ApiError extends Error {
   readonly status: number;
