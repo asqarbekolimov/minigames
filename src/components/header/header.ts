@@ -1,5 +1,7 @@
 import './header.scss';
 import logoPath from '@/assets/icons/logo.svg';
+import { showSnackbar } from '@/components/common/snackbar';
+import { getCurrentSession, signOutUser, type AuthSession } from '@/services/auth';
 
 const navLinks = [
   { route: 'home', name: 'Home', path: '/' },
@@ -66,6 +68,27 @@ export function createHeader(): HTMLElement {
   signUpButton.addEventListener('click', () => {
     globalThis.dispatchEvent(new CustomEvent('open-auth-modal', { detail: 'register' }));
   });
+
+  const userArea = document.createElement('div');
+  userArea.classList.add('header__user', 'is-hidden');
+
+  const userAvatar = document.createElement('img');
+  userAvatar.classList.add('header__user-avatar', 'is-hidden');
+  userAvatar.alt = '';
+
+  const username = document.createElement('span');
+  username.classList.add('header__user-name');
+
+  const logoutButton = document.createElement('button');
+  logoutButton.classList.add('button', 'header__user-logout');
+  logoutButton.type = 'button';
+  logoutButton.textContent = 'Log Out';
+  logoutButton.addEventListener('click', async () => {
+    await signOutUser();
+    showSnackbar({ message: 'You have been signed out.', variant: 'info' });
+  });
+
+  userArea.append(userAvatar, username, logoutButton);
 
   const menuButton = document.createElement('button');
   menuButton.classList.add('button', 'menu__button');
@@ -148,10 +171,28 @@ export function createHeader(): HTMLElement {
     toggleMenu();
   });
 
-  mobileActions.append(mobileSignInButton, mobileSignUpButton);
+  const mobileUserArea = document.createElement('div');
+  mobileUserArea.classList.add('mobile_menu__user', 'is-hidden');
+
+  const mobileUsername = document.createElement('span');
+  mobileUsername.classList.add('mobile_menu__user-name');
+
+  const mobileLogoutButton = document.createElement('button');
+  mobileLogoutButton.classList.add('button', 'mobile_menu__logout');
+  mobileLogoutButton.type = 'button';
+  mobileLogoutButton.textContent = 'Log Out';
+  mobileLogoutButton.addEventListener('click', async () => {
+    await signOutUser();
+    showSnackbar({ message: 'You have been signed out.', variant: 'info' });
+    toggleMenu();
+  });
+
+  mobileUserArea.append(mobileUsername, mobileLogoutButton);
+
+  mobileActions.append(mobileSignInButton, mobileSignUpButton, mobileUserArea);
   mobileMenu.append(mobileHeaderRow, mobileNavbar, mobileActions);
 
-  actions.append(signInButton, signUpButton, menuButton);
+  actions.append(signInButton, signUpButton, userArea, menuButton);
   nav.append(navbar, actions);
   header.append(logo, nav, mobileMenu);
 
@@ -192,6 +233,33 @@ export function createHeader(): HTMLElement {
     const { route } = (event as CustomEvent<{ route: string }>).detail;
     setActiveLink(route);
   });
+
+  const renderAuthState = (session: AuthSession): void => {
+    const isAuthed = session !== undefined;
+
+    signInButton.classList.toggle('is-hidden', isAuthed);
+    signUpButton.classList.toggle('is-hidden', isAuthed);
+    userArea.classList.toggle('is-hidden', !isAuthed);
+
+    mobileSignInButton.classList.toggle('is-hidden', isAuthed);
+    mobileSignUpButton.classList.toggle('is-hidden', isAuthed);
+    mobileUserArea.classList.toggle('is-hidden', !isAuthed);
+
+    if (!session) return;
+
+    const name = session.displayName ?? session.email ?? 'Player';
+    username.textContent = name;
+    mobileUsername.textContent = name;
+
+    userAvatar.classList.toggle('is-hidden', !session.photoURL);
+    if (session.photoURL) userAvatar.src = session.photoURL;
+  };
+
+  globalThis.addEventListener('auth-state-change', (event) => {
+    renderAuthState((event as CustomEvent<AuthSession>).detail);
+  });
+
+  renderAuthState(getCurrentSession());
 
   setActiveLink('home');
 

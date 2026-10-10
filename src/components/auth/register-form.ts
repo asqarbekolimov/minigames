@@ -100,9 +100,19 @@ export function createRegisterForm(): HTMLFormElement {
         confirmPasswordErrorMessage,
       );
 
-    if (!isValid) {
-      event.preventDefault();
-    }
+    if (!isValid || !emailInput || !usernameInput || !passwordInput) return;
+
+    form.dispatchEvent(
+      new CustomEvent('auth-submit', {
+        bubbles: true,
+        detail: {
+          mode: 'register',
+          email: emailInput.value,
+          password: passwordInput.value,
+          username: usernameInput.value,
+        },
+      }),
+    );
   });
   form.noValidate = true;
   return form;
