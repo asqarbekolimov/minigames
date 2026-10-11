@@ -235,7 +235,7 @@ export function createHeader(): HTMLElement {
   });
 
   const renderAuthState = (session: AuthSession): void => {
-    const isAuthed = session !== undefined;
+    const isAuthed = Boolean(session);
 
     signInButton.classList.toggle('is-hidden', isAuthed);
     signUpButton.classList.toggle('is-hidden', isAuthed);
