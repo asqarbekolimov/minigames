@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   createHeader: vi.fn(() => document.createElement('header')),
@@ -29,6 +29,10 @@ describe('createAppLayout', () => {
     vi.clearAllMocks();
     vi.useRealTimers();
     document.body.className = '';
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('assembles the wrapper with header, content and footer', () => {
@@ -112,5 +116,76 @@ describe('createAppLayout', () => {
     modal?.dispatchEvent(new Event('game-details-close'));
     vi.advanceTimersByTime(200);
     expect(layout.element.querySelector('.game-details-page')).toBeNull();
+  });
+
+  it('closes immediately when the user prefers reduced motion', () => {
+    vi.spyOn(globalThis, 'matchMedia').mockReturnValue({ matches: true } as MediaQueryList);
+    const layout = createAppLayout();
+    globalThis.dispatchEvent(new CustomEvent('open-auth-modal', { detail: 'login' }));
+
+    layout.element.querySelector('.auth-page')?.dispatchEvent(new Event('login-modal-close'));
+
+    expect(layout.element.querySelector('.auth-page')).toBeNull();
+    expect(document.body.classList.contains('auth-modal-open')).toBe(false);
+  });
+
+  it('closes game details immediately when reduced motion is preferred', () => {
+    vi.spyOn(globalThis, 'matchMedia').mockReturnValue({ matches: true } as MediaQueryList);
+    const layout = createAppLayout();
+    const trigger = document.createElement('button');
+    trigger.dataset.openGameDetails = '';
+    layout.element.append(trigger);
+    document.body.append(layout.element);
+
+    trigger.click();
+    layout.element
+      .querySelector('.game-details-page')
+      ?.dispatchEvent(new Event('game-details-close'));
+
+    expect(layout.element.querySelector('.game-details-page')).toBeNull();
+    expect(document.body.classList.contains('game-details-open')).toBe(false);
+  });
+
+  it('finishes the auth close only for animation events targeting the modal', () => {
+    const layout = createAppLayout();
+    globalThis.dispatchEvent(new CustomEvent('open-auth-modal', { detail: 'login' }));
+    const modal = layout.element.querySelector('.auth-page');
+    modal?.dispatchEvent(new Event('login-modal-close'));
+
+    const child = document.createElement('span');
+    modal?.append(child);
+    child.dispatchEvent(new Event('animationend', { bubbles: true }));
+    expect(layout.element.querySelector('.auth-page')).not.toBeNull();
+
+    modal?.dispatchEvent(new Event('animationend'));
+    expect(layout.element.querySelector('.auth-page')).toBeNull();
+  });
+
+  it('ignores unrelated key presses and ignores clicks without an element target', () => {
+    vi.useFakeTimers();
+    const layout = createAppLayout();
+    globalThis.dispatchEvent(new CustomEvent('open-auth-modal', { detail: 'login' }));
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'a' }));
+    expect(layout.element.querySelector('.auth-page')).not.toBeNull();
+
+    document.dispatchEvent(new MouseEvent('click'));
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Esc' }));
+    vi.advanceTimersByTime(200);
+
+    expect(layout.element.querySelector('.auth-page')).toBeNull();
+  });
+
+  it('does not re-open game details while one is already open', () => {
+    const layout = createAppLayout();
+    const trigger = document.createElement('button');
+    trigger.dataset.openGameDetails = '';
+    layout.element.append(trigger);
+    document.body.append(layout.element);
+
+    trigger.click();
+    trigger.click();
+
+    expect(mocks.createGameDetails).toHaveBeenCalled();
   });
 });
