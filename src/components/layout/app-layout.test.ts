@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
+  isSessionActive: vi.fn(() => true),
   createHeader: vi.fn(() => document.createElement('header')),
   createFooter: vi.fn(() => document.createElement('footer')),
   createAuthForm: vi.fn(() => {
@@ -15,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   }),
 }));
 
+vi.mock('@/services/auth', () => ({ isSessionActive: mocks.isSessionActive }));
 vi.mock('@/components/header/header', () => ({ createHeader: mocks.createHeader }));
 vi.mock('@/components/footer/footer', () => ({ createFooter: mocks.createFooter }));
 vi.mock('@/components/auth/auth-form', () => ({ createAuthForm: mocks.createAuthForm }));
@@ -27,6 +29,7 @@ import { createAppLayout } from '@/components/layout/app-layout';
 describe('createAppLayout', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.isSessionActive.mockReturnValue(true);
     vi.useRealTimers();
     document.body.className = '';
   });
@@ -174,6 +177,27 @@ describe('createAppLayout', () => {
     vi.advanceTimersByTime(200);
 
     expect(layout.element.querySelector('.auth-page')).toBeNull();
+  });
+
+  it('suspends game details, opens auth for a protected action and restores on close', () => {
+    vi.useFakeTimers();
+    const layout = createAppLayout();
+    const trigger = document.createElement('button');
+    trigger.dataset.openGameDetails = '';
+    layout.element.append(trigger);
+    document.body.append(layout.element);
+
+    trigger.click();
+    const gameModal = layout.element.querySelector<HTMLElement>('.game-details-page');
+
+    globalThis.dispatchEvent(new CustomEvent('auth-required-for-action'));
+    expect(gameModal?.hidden).toBe(true);
+    expect(layout.element.querySelector('.auth-page')).not.toBeNull();
+
+    layout.element.querySelector('.auth-page')?.dispatchEvent(new Event('login-modal-close'));
+    vi.advanceTimersByTime(200);
+
+    expect(gameModal?.hidden).toBe(false);
   });
 
   it('does not re-open game details while one is already open', () => {

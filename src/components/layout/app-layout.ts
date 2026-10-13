@@ -2,6 +2,7 @@ import { createHeader } from '@/components/header/header';
 import { createFooter } from '@/components/footer/footer';
 import { createAuthForm } from '@/components/auth/auth-form';
 import { createGameDetails } from '@/components/game-details/game-details';
+import { isSessionActive } from '@/services/auth';
 
 export interface AppLayout {
   element: HTMLElement;
@@ -22,6 +23,13 @@ export function createAppLayout(): AppLayout {
   layout.append(createHeader(), content, createFooter());
 
   let loginModal: HTMLElement | undefined;
+  let suspendedGameDetails: HTMLElement | undefined;
+
+  const resumeSuspendedGameDetails = () => {
+    if (!suspendedGameDetails) return;
+    suspendedGameDetails.hidden = false;
+    suspendedGameDetails = undefined;
+  };
 
   const closeLoginModal = () => {
     const modal = loginModal;
@@ -33,6 +41,7 @@ export function createAppLayout(): AppLayout {
       modal.remove();
       loginModal = undefined;
       document.body.classList.remove('auth-modal-open');
+      resumeSuspendedGameDetails();
       return;
     }
 
@@ -43,6 +52,7 @@ export function createAppLayout(): AppLayout {
       modal.remove();
       loginModal = undefined;
       document.body.classList.remove('auth-modal-open');
+      resumeSuspendedGameDetails();
     };
 
     const handleAnimationEnd = (event: AnimationEvent) => {
@@ -95,6 +105,7 @@ export function createAppLayout(): AppLayout {
 
   const openGameDetails = () => {
     if (gameDetailsModal) return;
+    isSessionActive();
     gameDetailsModal = createGameDetails();
     layout.append(gameDetailsModal);
     document.body.classList.add('game-details-open');
@@ -117,6 +128,17 @@ export function createAppLayout(): AppLayout {
   globalThis.addEventListener('open-auth-modal', (event) => {
     const mode = (event as CustomEvent<'login' | 'register'>).detail;
     openAuthModal(mode);
+  });
+
+  globalThis.addEventListener('auth-required-for-action', () => {
+    if (loginModal) return;
+
+    if (gameDetailsModal) {
+      gameDetailsModal.hidden = true;
+      suspendedGameDetails = gameDetailsModal;
+    }
+
+    openAuthModal('login');
   });
 
   return { element: layout, content };

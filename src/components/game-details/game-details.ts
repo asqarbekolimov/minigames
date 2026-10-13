@@ -1,5 +1,10 @@
+import { isSessionActive } from '@/services/auth';
 import type { CommentI, GameDetailsI, MockResponseI, TopRecordI } from '@/utils/type';
 import './game-details.scss';
+
+function requestAuthentication(): void {
+  globalThis.dispatchEvent(new CustomEvent('auth-required-for-action'));
+}
 
 const GAME_DATA_URL = '/assets/mock-data/game-tukoni-forest-keepers.json';
 const COMMENTS_DATA_URL = '/assets/mock-data/comments-tukoni-forest-keepers.json';
@@ -112,6 +117,11 @@ function setupFavoriteToggle(page: HTMLElement): void {
   const label = favoriteButton?.querySelector<HTMLElement>('.game-details__favorite-label');
 
   favoriteButton?.addEventListener('click', () => {
+    if (!isSessionActive()) {
+      requestAuthentication();
+      return;
+    }
+
     const isActive = favoriteButton.classList.toggle('is-active');
     favoriteButton.setAttribute('aria-pressed', String(isActive));
     favoriteButton.setAttribute(
@@ -126,7 +136,11 @@ function setupCommentForm(page: HTMLElement): void {
   const form = page.querySelector<HTMLFormElement>('.comment-form');
   const textarea = page.querySelector<HTMLTextAreaElement>('.comment-form__textarea');
 
-  form?.addEventListener('submit', (event) => event.preventDefault());
+  form?.addEventListener('submit', (event) => {
+    event.preventDefault();
+
+    if (!isSessionActive()) requestAuthentication();
+  });
   textarea?.addEventListener('input', () => resizeTextarea(textarea));
 }
 
@@ -145,6 +159,11 @@ function setupCommentLikes(page: HTMLElement): void {
 
     const button = event.target.closest<HTMLButtonElement>('.comment__like');
     if (!button) return;
+
+    if (!isSessionActive()) {
+      requestAuthentication();
+      return;
+    }
 
     const isActive = button.classList.toggle('is-active');
     button.setAttribute('aria-pressed', String(isActive));
@@ -169,7 +188,7 @@ async function hydrate(page: HTMLElement): Promise<void> {
     renderRecords(page, gamePayload.data.topRecords);
     renderComments(page, commentsPayload.data);
   } catch {
-    // Keep the static fallback content when the mock data cannot be loaded.
+    return;
   }
 }
 

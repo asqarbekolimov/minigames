@@ -1,6 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CommentI, GameDetailsI, MockResponseI } from '@/utils/type';
 
+const authMocks = vi.hoisted(() => ({ isSessionActive: vi.fn(() => true) }));
+vi.mock('@/services/auth', () => ({ isSessionActive: authMocks.isSessionActive }));
+
 import { createGameDetails } from '@/components/game-details/game-details';
 
 const game: GameDetailsI = {
@@ -56,6 +59,7 @@ const fetchMock = vi.fn();
 describe('createGameDetails', () => {
   beforeEach(() => {
     fetchMock.mockReset();
+    authMocks.isSessionActive.mockReturnValue(true);
     vi.stubGlobal('fetch', fetchMock);
   });
 
@@ -134,6 +138,21 @@ describe('createGameDetails', () => {
     const submit = new Event('submit', { cancelable: true });
     form?.dispatchEvent(submit);
     expect(submit.defaultPrevented).toBe(true);
+  });
+
+  it('blocks a protected action and requests authentication when there is no session', () => {
+    fetchMock.mockImplementation(() => Promise.resolve(payload(game)));
+    authMocks.isSessionActive.mockReturnValue(false);
+    const page = createGameDetails();
+    const listener = vi.fn();
+    globalThis.addEventListener('auth-required-for-action', listener);
+    const favorite = page.querySelector<HTMLButtonElement>('.game-details__favorite');
+
+    favorite?.click();
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(favorite?.getAttribute('aria-pressed')).toBe('false');
+    globalThis.removeEventListener('auth-required-for-action', listener);
   });
 
   it('dispatches a close event from the close button and the backdrop', () => {
