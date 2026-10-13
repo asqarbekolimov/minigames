@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { User } from 'firebase/auth';
+import { APP_SESSION_STORAGE_KEY, SESSION_TTL_MS, type AppSession } from '@/services/session';
 
 const mocks = vi.hoisted(() => ({
   onAuthStateChanged: vi.fn(),
@@ -9,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   updateProfile: vi.fn(() => Promise.resolve()),
   signOut: vi.fn(() => Promise.resolve()),
   setCustomParameters: vi.fn(),
+  showSnackbar: vi.fn(),
 }));
 
 vi.mock('firebase/auth', () => {
@@ -27,8 +29,7 @@ vi.mock('firebase/auth', () => {
 });
 
 vi.mock('@/services/firebase', () => ({ app: {}, auth: {} }));
-
-const STORAGE_KEY = 'minigames.auth.session';
+vi.mock('@/components/common/snackbar', () => ({ showSnackbar: mocks.showSnackbar }));
 
 function makeUser(overrides: Partial<User> = {}): User {
   return {
@@ -40,8 +41,15 @@ function makeUser(overrides: Partial<User> = {}): User {
   } as User;
 }
 
-function deferred<T>() {
-  return Promise.withResolvers<T>();
+function seedSession(overrides: Partial<AppSession> = {}): AppSession {
+  const session: AppSession = {
+    displayName: 'Alex',
+    email: 'alex@example.com',
+    authenticatedAt: Date.now(),
+    ...overrides,
+  };
+  globalThis.localStorage.setItem(APP_SESSION_STORAGE_KEY, JSON.stringify(session));
+  return session;
 }
 
 async function loadAuth() {
@@ -52,22 +60,11 @@ function authCallback(): (user: User | null | undefined) => void {
   return mocks.onAuthStateChanged.mock.calls[0][1] as (user: User | null | undefined) => void;
 }
 
-function seedSession(uid: string): void {
-  globalThis.localStorage.setItem(
-    STORAGE_KEY,
-    JSON.stringify({
-      uid,
-      email: 'alex@example.com',
-      createdAt: Date.now(),
-      expiresAt: Date.now() + 10_000,
-    }),
-  );
-}
-
 describe('auth service', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
+    vi.useRealTimers();
     globalThis.localStorage.clear();
   });
 
@@ -79,7 +76,7 @@ describe('auth service', () => {
 
   it('initializes once and clears the session when signed out', async () => {
     const auth = await loadAuth();
-    seedSession('u1');
+    seedSession();
 
     auth.initAuth();
     auth.initAuth();
@@ -87,28 +84,63 @@ describe('auth service', () => {
 
     authCallback()(undefined);
     expect(auth.getCurrentSession()).toBeUndefined();
-    expect(globalThis.localStorage.getItem(STORAGE_KEY)).toBeNull();
+    expect(globalThis.localStorage.getItem(APP_SESSION_STORAGE_KEY)).toBeNull();
+  });
+
+  it('restores a still-valid session at startup without changing authenticatedAt', async () => {
+    const auth = await loadAuth();
+    const authenticatedAt = Date.now() - 1000;
+    const seeded = seedSession({ authenticatedAt });
+
+    auth.initAuth();
+
+    expect(auth.getCurrentSession()).toEqual(seeded);
+    expect(auth.getCurrentSession()?.authenticatedAt).toBe(authenticatedAt);
+  });
+
+  it('expires a session that is already past its lifetime at startup', async () => {
+    const auth = await loadAuth();
+    seedSession({ authenticatedAt: Date.now() - SESSION_TTL_MS - 1 });
+
+    auth.initAuth();
+
+    expect(auth.getCurrentSession()).toBeUndefined();
+    expect(globalThis.localStorage.getItem(APP_SESSION_STORAGE_KEY)).toBeNull();
+    expect(mocks.signOut).toHaveBeenCalled();
+    expect(mocks.showSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({ variant: 'warning' }),
+    );
+  });
+
+  it('drops invalid stored data and signs out at startup', async () => {
+    const auth = await loadAuth();
+    globalThis.localStorage.setItem(APP_SESSION_STORAGE_KEY, '{broken-json');
+
+    auth.initAuth();
+
+    expect(auth.getCurrentSession()).toBeUndefined();
+    expect(globalThis.localStorage.getItem(APP_SESSION_STORAGE_KEY)).toBeNull();
+    expect(mocks.signOut).toHaveBeenCalled();
   });
 
   it('signs out a restored credential that has no valid app session', async () => {
     const auth = await loadAuth();
     auth.initAuth();
-    seedSession('u1');
 
-    authCallback()(makeUser({ uid: 'u2' }));
+    authCallback()(makeUser());
 
     expect(mocks.signOut).toHaveBeenCalledWith(expect.anything());
     expect(auth.getCurrentSession()).toBeUndefined();
   });
 
-  it('restores the stored session for a matching restored user', async () => {
+  it('keeps a restored credential when a valid app session exists', async () => {
     const auth = await loadAuth();
-    seedSession('u1');
+    seedSession();
     auth.initAuth();
 
-    authCallback()(makeUser({ uid: 'u1' }));
+    authCallback()(makeUser());
 
-    expect(auth.getCurrentSession()?.uid).toBe('u1');
+    expect(auth.getCurrentSession()).toBeDefined();
     expect(mocks.signOut).not.toHaveBeenCalled();
   });
 
@@ -118,16 +150,15 @@ describe('auth service', () => {
     const listener = vi.fn();
     globalThis.addEventListener('auth-state-change', listener);
 
-    const user = await auth.signInWithGoogle();
+    await auth.signInWithGoogle();
 
     expect(mocks.setCustomParameters).toHaveBeenCalledWith({ prompt: 'select_account' });
-    expect(user.uid).toBe('u1');
     expect(auth.getCurrentSession()?.email).toBe('alex@example.com');
     expect(listener).toHaveBeenCalled();
     globalThis.removeEventListener('auth-state-change', listener);
   });
 
-  it('signs in with email and password', async () => {
+  it('signs in with email and password and stores the session', async () => {
     mocks.signInWithEmailAndPassword.mockResolvedValue({ user: makeUser() });
     const auth = await loadAuth();
 
@@ -138,7 +169,7 @@ describe('auth service', () => {
       'alex@example.com',
       'secret1',
     );
-    expect(auth.getCurrentSession()?.uid).toBe('u1');
+    expect(auth.getCurrentSession()?.email).toBe('alex@example.com');
   });
 
   it('propagates email sign-in failures without creating a session', async () => {
@@ -166,7 +197,7 @@ describe('auth service', () => {
   });
 
   it('creates the session when the auth event arrives while signing in', async () => {
-    const pending = deferred<{ user: User }>();
+    const pending = Promise.withResolvers<{ user: User }>();
     mocks.signInWithPopup.mockReturnValue(pending.promise);
     const auth = await loadAuth();
     auth.initAuth();
@@ -174,7 +205,7 @@ describe('auth service', () => {
     const signingIn = auth.signInWithGoogle();
     authCallback()(makeUser());
 
-    expect(auth.getCurrentSession()?.uid).toBe('u1');
+    expect(auth.getCurrentSession()?.email).toBe('alex@example.com');
 
     pending.resolve({ user: makeUser() });
     await signingIn;
@@ -182,14 +213,61 @@ describe('auth service', () => {
 
   it('signs out, clearing the session and Firebase state', async () => {
     const auth = await loadAuth();
-    seedSession('u1');
+    seedSession();
     auth.initAuth();
-    authCallback()(makeUser({ uid: 'u1' }));
 
     await auth.signOutUser();
 
     expect(mocks.signOut).toHaveBeenCalledTimes(1);
     expect(auth.getCurrentSession()).toBeUndefined();
+  });
+
+  it('reports an active session as valid', async () => {
+    mocks.signInWithEmailAndPassword.mockResolvedValue({ user: makeUser() });
+    const auth = await loadAuth();
+    await auth.signInWithEmail('alex@example.com', 'secret1');
+
+    expect(auth.isSessionActive()).toBe(true);
+  });
+
+  it('reports no active session for a guest', async () => {
+    const auth = await loadAuth();
+
+    expect(auth.isSessionActive()).toBe(false);
+  });
+
+  it('expires an active session past its lifetime and shows one snackbar', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(0);
+    mocks.signInWithEmailAndPassword.mockResolvedValue({ user: makeUser() });
+    const auth = await loadAuth();
+    await auth.signInWithEmail('alex@example.com', 'secret1');
+
+    vi.setSystemTime(SESSION_TTL_MS + 1);
+    expect(auth.isSessionActive()).toBe(false);
+
+    expect(auth.getCurrentSession()).toBeUndefined();
+    expect(mocks.signOut).toHaveBeenCalled();
+    expect(mocks.showSnackbar).toHaveBeenCalledTimes(1);
+  });
+
+  it('checks expiration when the page becomes visible again', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(0);
+    mocks.signInWithEmailAndPassword.mockResolvedValue({ user: makeUser() });
+    const auth = await loadAuth();
+    auth.initAuth();
+    await auth.signInWithEmail('alex@example.com', 'secret1');
+
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      get: () => 'visible',
+    });
+    vi.setSystemTime(SESSION_TTL_MS + 5);
+    document.dispatchEvent(new Event('visibilitychange'));
+
+    expect(auth.getCurrentSession()).toBeUndefined();
+    expect(mocks.signOut).toHaveBeenCalled();
   });
 
   it('classifies canceled provider errors', async () => {

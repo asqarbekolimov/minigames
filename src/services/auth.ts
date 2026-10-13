@@ -9,7 +9,14 @@ import {
   type User,
 } from 'firebase/auth';
 import { auth } from '@/services/firebase';
-import { clearSession, createSession, readSession, type AppSession } from '@/services/session';
+import { showSnackbar } from '@/components/common/snackbar';
+import {
+  clearSession,
+  createSession,
+  isSessionExpired,
+  readStoredSession,
+  type AppSession,
+} from '@/services/session';
 
 export type AuthSession = AppSession | undefined;
 
@@ -51,9 +58,50 @@ function getErrorCode(error: unknown): string | undefined {
   return (error as { code?: string } | undefined)?.code;
 }
 
+function expireSession(): void {
+  if (!state.session) return;
+
+  clearSession();
+  setSession(undefined);
+  void signOut(auth);
+  showSnackbar({
+    message: 'Your session has expired. Please sign in again.',
+    variant: 'warning',
+  });
+}
+
+export function isSessionActive(): boolean {
+  const session = state.session;
+  if (!session) return false;
+
+  if (isSessionExpired(session)) {
+    expireSession();
+    return false;
+  }
+
+  return true;
+}
+
+function adoptStoredSession(session: AppSession): void {
+  if (isSessionExpired(session)) {
+    state.session = session;
+    expireSession();
+    return;
+  }
+  setSession(session);
+}
+
 export function initAuth(): void {
   if (state.isInitialized) return;
   state.isInitialized = true;
+
+  const stored = readStoredSession();
+  if (stored.wasInvalid) {
+    clearSession();
+    void signOut(auth);
+  } else if (stored.session) {
+    adoptStoredSession(stored.session);
+  }
 
   onAuthStateChanged(auth, (user) => {
     if (!user) {
@@ -62,11 +110,8 @@ export function initAuth(): void {
       return;
     }
 
-    const stored = readSession();
-    if (stored && stored.uid === user.uid) {
-      setSession(stored);
-      return;
-    }
+    const current = state.session && !isSessionExpired(state.session) ? state.session : undefined;
+    if (current) return;
 
     if (state.isSignInPending) {
       setSession(createSession(user));
@@ -75,12 +120,14 @@ export function initAuth(): void {
 
     void signOut(auth);
   });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') isSessionActive();
+  });
 }
 
 function ensureSession(user: User): void {
-  if (!state.session || state.session.uid !== user.uid) {
-    setSession(createSession(user));
-  }
+  if (!state.session) setSession(createSession(user));
 }
 
 export async function signInWithGoogle(): Promise<User> {
