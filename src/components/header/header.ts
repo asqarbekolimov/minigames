@@ -251,8 +251,8 @@ export function createHeader(): HTMLElement {
     username.textContent = name;
     mobileUsername.textContent = name;
 
-    userAvatar.classList.toggle('is-hidden', !session.photoURL);
-    if (session.photoURL) userAvatar.src = session.photoURL;
+    userAvatar.classList.toggle('is-hidden', !session.avatarUrl);
+    if (session.avatarUrl) userAvatar.src = session.avatarUrl;
   };
 
   globalThis.addEventListener('auth-state-change', (event) => {

@@ -16,12 +16,10 @@ vi.mock('@/components/common/snackbar', () => ({ showSnackbar: mocks.showSnackba
 import { createHeader } from '@/components/header/header';
 
 const session = {
-  uid: 'u1',
-  email: 'alex@example.com',
   displayName: 'Alex',
-  photoURL: undefined,
-  createdAt: 1,
-  expiresAt: Date.now() + 10_000,
+  email: 'alex@example.com',
+  authenticatedAt: 1,
+  avatarUrl: undefined,
 };
 
 describe('createHeader', () => {
