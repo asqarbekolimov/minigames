@@ -12,9 +12,7 @@ import type {
   PostCommentI,
 } from '@/utils/type';
 
-const API_BASE_URL = (
-  import.meta.env.VITE_API_BASE_URL ?? 'https://faxb76kxra.execute-api.eu-central-1.amazonaws.com'
-).replace(/\/$/, '');
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL!.replace(/\/$/, '');
 
 export class ApiError extends Error {
   readonly status: number;
@@ -42,7 +40,7 @@ async function extractErrorMessage(response: Response): Promise<string> {
     const body = (await response.json()) as { error?: string };
     if (body.error) return body.error;
   } catch {
-    // Fall back to a generic message when the body is not JSON.
+    return `Request failed with status ${response.status}`;
   }
 
   return `Request failed with status ${response.status}`;

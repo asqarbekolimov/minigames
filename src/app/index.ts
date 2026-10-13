@@ -1,5 +1,6 @@
 import renderApp from './router';
 import '@/styles/main.scss';
+import { initAuth } from '@/services/auth';
 
 function createRoot(): HTMLElement {
   const root = document.createElement('div');
@@ -9,4 +10,5 @@ function createRoot(): HTMLElement {
 }
 
 const root = createRoot();
+initAuth();
 renderApp(root);

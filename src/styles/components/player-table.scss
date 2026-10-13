@@ -34,7 +34,6 @@
   border-collapse: collapse;
   border-spacing: 0;
   background: $white;
-  // font-family: $font-family-secondary;
 }
 
 .top-players__row {
@@ -144,7 +143,7 @@ thead .top-players__cell--player {
 .top-players__rank,
 .top-players__streak {
   white-space: nowrap;
-  // font-family: $font-family-secondary;
+
   font-size: font-size('body-md');
   line-height: 1.2;
 }
@@ -180,7 +179,7 @@ thead .top-players__cell--player {
   align-items: center;
   justify-content: center;
   background: $bg;
-  // border: 1.5px solid $on-primary;
+
   border-radius: radius('full');
   padding: size('05') size('1.5');
   color: $on-primary;
