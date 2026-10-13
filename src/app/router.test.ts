@@ -27,6 +27,7 @@ const mocks = vi.hoisted(() => {
   };
 });
 
+vi.mock('@/services/auth', () => ({ isSessionActive: vi.fn(() => true) }));
 vi.mock('@/components/layout/app-layout', () => ({ createAppLayout: mocks.createAppLayout }));
 vi.mock('@/pages', () => ({ createHomePage: mocks.createHomePage }));
 vi.mock('@/pages/library/library-page', () => ({ createLibraryPage: mocks.createLibraryPage }));

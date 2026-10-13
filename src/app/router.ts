@@ -1,4 +1,5 @@
 import { createAppLayout } from '@/components/layout/app-layout';
+import { isSessionActive } from '@/services/auth';
 import { createHomePage } from '@/pages';
 import { createLibraryPage } from '@/pages/library/library-page';
 import { createNotFoundPage } from '@/pages/not-found/not-found-page';
@@ -51,6 +52,7 @@ function renderApp(root: HTMLElement): void {
   }
 
   function navigate(route: RouteName): void {
+    isSessionActive();
     if (route === currentRoute) return;
 
     const path = routePaths[route];
