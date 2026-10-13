@@ -23,3 +23,28 @@ persists the session and enforces its expiration.
 
 > App-session lifetime and recovery are defined once in the Story 4 Architecture Note.
 > Do not configure them as Firebase settings — use the SDK defaults.
+
+### App session
+
+The client-side app session (distinct from Firebase's persisted identity) is stored as a
+single JSON object under this namespaced `localStorage` key:
+
+```
+minigames:minigames-22dbe:app-session
+```
+
+Stored shape (only this minimum profile data; no passwords or Firebase tokens):
+
+```json
+{ "displayName": "Alex", "email": "alex@example.com", "authenticatedAt": 1730000000000, "avatarUrl": "https://…" }
+```
+
+- `authenticatedAt` is the `Date.now()` millisecond timestamp of sign-in; `avatarUrl` is
+  stored only when the provider supplies a photo.
+- The session expires `SESSION_TTL_MS` (see `src/services/session.ts`) after
+  `authenticatedAt`. Reloading does not extend the lifetime.
+- Invalid or expired data removes only this key, signs out of Firebase and returns the app
+  to Guest Mode (with one Snackbar on expiration).
+
+Reviewers can inspect the key in DevTools → Application → Local Storage, edit
+`authenticatedAt` to an older timestamp, then reload or trigger a protected action.
