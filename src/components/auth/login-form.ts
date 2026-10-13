@@ -129,9 +129,6 @@ function loginValidation(form: HTMLFormElement): void {
     passwordInput.addEventListener('change', validateAll);
   }
 
-  // Keep the submit button disabled while invalid, but still reveal validation
-  // errors when the user presses the (disabled) Login button. The button has
-  // `pointer-events: none` while disabled, so the click lands on this wrapper.
   const submitWrap = form.querySelector<HTMLElement>('.login-actions__submit-wrap');
   submitWrap?.addEventListener('click', () => {
     validateAll();

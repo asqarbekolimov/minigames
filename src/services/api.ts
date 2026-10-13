@@ -40,7 +40,7 @@ async function extractErrorMessage(response: Response): Promise<string> {
     const body = (await response.json()) as { error?: string };
     if (body.error) return body.error;
   } catch {
-    // Fall back to a generic message when the body is not JSON.
+    return `Request failed with status ${response.status}`;
   }
 
   return `Request failed with status ${response.status}`;
