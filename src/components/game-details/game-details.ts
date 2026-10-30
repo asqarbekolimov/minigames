@@ -1,13 +1,13 @@
-import { isSessionActive } from '@/services/auth';
-import type { CommentI, GameDetailsI, MockResponseI, TopRecordI } from '@/utils/type';
+import { createErrorBanner, createSkeleton } from '@/components/common/async-content';
+import { getComments, getGameDetails } from '@/services/api';
+import { getCurrentSession, isSessionActive } from '@/services/auth';
+import type { CommentI, GameDetailsI, TopRecordI } from '@/utils/type';
 import './game-details.scss';
 
 function requestAuthentication(): void {
   globalThis.dispatchEvent(new CustomEvent('auth-required-for-action'));
 }
 
-const GAME_DATA_URL = '/assets/mock-data/game-tukoni-forest-keepers.json';
-const COMMENTS_DATA_URL = '/assets/mock-data/comments-tukoni-forest-keepers.json';
 const COMMENT_MAX_HEIGHT = 88;
 
 const starIcon = `<svg class="game-details__icon game-details__icon--star" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8.85 17.825L12 15.925L15.15 17.85L14.325 14.25L17.1 11.85L13.45 11.525L12 8.125L10.55 11.5L6.9 11.825L9.675 14.25L8.85 17.825ZM5.825 22L7.45 14.975L2 10.25L9.2 9.625L12 3L14.8 9.625L22 10.25L16.55 14.975L18.175 22L12 18.275L5.825 22Z" fill="currentColor"/></svg>`;
@@ -20,82 +20,21 @@ const sendIcon = `<svg class="game-details__send-icon" xmlns="http://www.w3.org/
 
 const medals = ['🥇', '🥈', '🥉'];
 
-export function createGameDetails(): HTMLElement {
+export function createGameDetails(gameSlug: string): HTMLElement {
   const page = document.createElement('div');
   page.classList.add('game-details-page');
 
   page.innerHTML = `
-    <div class="game-details" role="dialog" aria-modal="true" aria-labelledby="game-details-title">
+    <div class="game-details" role="dialog" aria-modal="true" aria-label="Game details">
       <div class="game-details__hero">
-        <img class="game-details__hero-image" src="/assets/images/games/tukoni-forest-keepers-hero.jpg" alt="Tukoni: Forest Keepers cover art" />
         <button class="game-details__close" type="button" aria-label="Close dialog">${closeIcon}</button>
       </div>
-
-      <div class="game-details__body">
-        <div class="game-details__header">
-          <h2 class="game-details__title" id="game-details-title">Tukoni: Forest Keepers</h2>
-          <ul class="game-details__stats">
-            <li class="game-details__stat">${starIcon}<span data-game-rating>4.9</span></li>
-            <li class="game-details__stat">${heartIcon}<span data-game-likes>31.2K</span></li>
-          </ul>
-        </div>
-
-        <p class="game-details__description" data-game-description>
-          Tukoni: Forest Keepers — a cozy hand-drawn puzzle-adventure. You are Traveller, a little
-          forest spirit on an important mission. Wander storybook meadows, visit mushroom villages,
-          meet adorable inhabitants, solve gentle hand-crafted puzzles, brew herbal teas and help the
-          Tukoni forest prepare peacefully for the coming winter.
-        </p>
-
-        <ul class="game-details__widgets">
-          <li class="widget"><span class="widget__label">Genre</span><span class="widget__value" data-spec-genre>Puzzle</span></li>
-          <li class="widget"><span class="widget__label">Players</span><span class="widget__value" data-spec-players>Solo</span></li>
-          <li class="widget"><span class="widget__label">Duration</span><span class="widget__value" data-spec-duration>40-90 min</span></li>
-          <li class="widget"><span class="widget__label">Price</span><span class="widget__value" data-spec-price>Free</span></li>
-        </ul>
-
-        <div class="game-details__actions">
-          <button class="game-details__play" type="button">Play Now</button>
-          <button class="game-details__favorite" type="button" aria-pressed="false">
-            ${heartIcon}
-            <span class="game-details__favorite-label">Add to Favorites</span>
-          </button>
-        </div>
-
-        <section class="game-details__section" aria-labelledby="game-details-records-title">
-          <h3 class="game-details__section-title" id="game-details-records-title">
-            <span class="game-details__emoji" aria-hidden="true">🏆</span> Top Records
-          </h3>
-          <ol class="records" data-game-records></ol>
-        </section>
-
-        <section class="game-details__section" aria-labelledby="game-details-comments-title">
-          <h3 class="game-details__section-title" id="game-details-comments-title" data-comments-title>Comments</h3>
-
-          <form class="comment-form">
-            <span class="comment-form__avatar" aria-hidden="true">U</span>
-            <label class="visually-hidden" for="game-details-comment">Add a comment</label>
-            <textarea
-              class="comment-form__textarea"
-              id="game-details-comment"
-              name="comment"
-              rows="1"
-              placeholder="Write a comment..."
-            ></textarea>
-            <button class="comment-form__send" type="submit" aria-label="Send comment">${sendIcon}</button>
-          </form>
-
-          <ul class="comments" data-game-comments></ul>
-        </section>
-      </div>
+      <div class="game-details__body" data-game-body></div>
     </div>
   `;
 
   setupDismiss(page);
-  setupFavoriteToggle(page);
-  setupCommentForm(page);
-  setupCommentLikes(page);
-  void hydrate(page);
+  void hydrate(page, gameSlug);
 
   return page;
 }
@@ -110,6 +49,124 @@ function setupDismiss(page: HTMLElement): void {
   page.addEventListener('click', (event) => {
     if (event.target === page) page.dispatchEvent(new Event('game-details-close'));
   });
+}
+
+async function hydrate(page: HTMLElement, gameSlug: string): Promise<void> {
+  const body = page.querySelector<HTMLElement>('[data-game-body]');
+  if (!body) return;
+
+  body.replaceChildren(createSkeleton({ variant: 'details', count: 1 }));
+
+  const userEmail = getCurrentSession()?.email;
+
+  try {
+    const [gameResponse, commentsResponse] = await Promise.all([
+      getGameDetails(gameSlug, userEmail),
+      getComments(gameSlug, { userEmail }),
+    ]);
+
+    renderGameDetails(page, body, gameResponse.data, commentsResponse.data);
+  } catch (error) {
+    body.replaceChildren(
+      createErrorBanner({
+        message: getErrorMessage(error),
+        retryLabel: 'Try again',
+        onRetry: () => void hydrate(page, gameSlug),
+      }),
+    );
+  }
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message) return error.message;
+
+  return 'Something went wrong while loading this game. Please try again.';
+}
+
+function renderGameDetails(
+  page: HTMLElement,
+  body: HTMLElement,
+  game: GameDetailsI,
+  comments: CommentI[],
+): void {
+  const dialog = page.querySelector<HTMLElement>('.game-details');
+  const hero = page.querySelector<HTMLElement>('.game-details__hero');
+
+  if (dialog) {
+    dialog.setAttribute('aria-labelledby', 'game-details-title');
+    dialog.removeAttribute('aria-label');
+  }
+
+  if (hero) {
+    hero.querySelector('.game-details__hero-image')?.remove();
+
+    const heroImage = document.createElement('img');
+    heroImage.classList.add('game-details__hero-image');
+    heroImage.src = game.heroImage;
+    heroImage.alt = `${game.name} cover art`;
+    hero.prepend(heroImage);
+  }
+
+  const isLiked = game.isLikedByCurrentUser;
+
+  body.innerHTML = `
+    <div class="game-details__header">
+      <h2 class="game-details__title" id="game-details-title">${game.name}</h2>
+      <ul class="game-details__stats">
+        <li class="game-details__stat">${starIcon}<span data-game-rating>${game.rating}</span></li>
+        <li class="game-details__stat">${heartIcon}<span data-game-likes>${formatCompactNumber(game.likesCount)}</span></li>
+      </ul>
+    </div>
+
+    <p class="game-details__description" data-game-description>${game.fullDescription}</p>
+
+    <ul class="game-details__widgets">
+      <li class="widget"><span class="widget__label">Genre</span><span class="widget__value" data-spec-genre>${game.specs.genre}</span></li>
+      <li class="widget"><span class="widget__label">Players</span><span class="widget__value" data-spec-players>${game.specs.players}</span></li>
+      <li class="widget"><span class="widget__label">Duration</span><span class="widget__value" data-spec-duration>${game.specs.duration}</span></li>
+      <li class="widget"><span class="widget__label">Price</span><span class="widget__value" data-spec-price>${game.specs.price}</span></li>
+    </ul>
+
+    <div class="game-details__actions">
+      <button class="game-details__play" type="button">Play Now</button>
+      <button class="game-details__favorite${isLiked ? ' is-active' : ''}" type="button" aria-pressed="${isLiked}" aria-label="${isLiked ? 'Remove from Favorites' : 'Add to Favorites'}">
+        ${heartIcon}
+        <span class="game-details__favorite-label">${isLiked ? 'Remove from Favorites' : 'Add to Favorites'}</span>
+      </button>
+    </div>
+
+    <section class="game-details__section" aria-labelledby="game-details-records-title">
+      <h3 class="game-details__section-title" id="game-details-records-title">
+        <span class="game-details__emoji" aria-hidden="true">🏆</span> Top Records
+      </h3>
+      <ol class="records" data-game-records></ol>
+    </section>
+
+    <section class="game-details__section" aria-labelledby="game-details-comments-title">
+      <h3 class="game-details__section-title" id="game-details-comments-title" data-comments-title>Comments</h3>
+
+      <form class="comment-form">
+        <span class="comment-form__avatar" aria-hidden="true">U</span>
+        <label class="visually-hidden" for="game-details-comment">Add a comment</label>
+        <textarea
+          class="comment-form__textarea"
+          id="game-details-comment"
+          name="comment"
+          rows="1"
+          placeholder="Write a comment..."
+        ></textarea>
+        <button class="comment-form__send" type="submit" aria-label="Send comment">${sendIcon}</button>
+      </form>
+
+      <ul class="comments" data-game-comments></ul>
+    </section>
+  `;
+
+  renderRecords(body, game.topRecords);
+  renderComments(body, comments);
+  setupFavoriteToggle(page);
+  setupCommentForm(page);
+  setupCommentLikes(page);
 }
 
 function setupFavoriteToggle(page: HTMLElement): void {
@@ -177,60 +234,8 @@ function setupCommentLikes(page: HTMLElement): void {
   });
 }
 
-async function hydrate(page: HTMLElement): Promise<void> {
-  try {
-    const [gamePayload, commentsPayload] = await Promise.all([
-      fetchJson<MockResponseI<GameDetailsI>>(GAME_DATA_URL),
-      fetchJson<MockResponseI<CommentI[]>>(COMMENTS_DATA_URL),
-    ]);
-
-    applyGameDetails(page, gamePayload.data);
-    renderRecords(page, gamePayload.data.topRecords);
-    renderComments(page, commentsPayload.data);
-  } catch {
-    return;
-  }
-}
-
-async function fetchJson<T>(url: string): Promise<T> {
-  const response = await fetch(url);
-
-  if (!response.ok) {
-    throw new Error(`Failed to load ${url}: ${response.status}`);
-  }
-
-  return (await response.json()) as T;
-}
-
-function applyGameDetails(page: HTMLElement, game: GameDetailsI): void {
-  const heroImage = page.querySelector<HTMLImageElement>('.game-details__hero-image');
-  const title = page.querySelector<HTMLElement>('.game-details__title');
-  const description = page.querySelector<HTMLElement>('[data-game-description]');
-  const rating = page.querySelector<HTMLElement>('[data-game-rating]');
-  const likes = page.querySelector<HTMLElement>('[data-game-likes]');
-
-  if (heroImage) {
-    heroImage.src = game.heroImage;
-    heroImage.alt = `${game.name} cover art`;
-  }
-  if (title) title.textContent = game.name;
-  if (description) description.textContent = game.fullDescription;
-  if (rating) rating.textContent = String(game.rating);
-  if (likes) likes.textContent = formatCompactNumber(game.likesCount);
-
-  setText(page, '[data-spec-genre]', game.specs.genre);
-  setText(page, '[data-spec-players]', game.specs.players);
-  setText(page, '[data-spec-duration]', game.specs.duration);
-  setText(page, '[data-spec-price]', game.specs.price);
-}
-
-function setText(page: HTMLElement, selector: string, value: string): void {
-  const element = page.querySelector<HTMLElement>(selector);
-  if (element) element.textContent = value;
-}
-
-function renderRecords(page: HTMLElement, records: TopRecordI[]): void {
-  const list = page.querySelector<HTMLElement>('[data-game-records]');
+function renderRecords(body: HTMLElement, records: TopRecordI[]): void {
+  const list = body.querySelector<HTMLElement>('[data-game-records]');
   if (!list) return;
 
   list.replaceChildren(...records.map((record) => createRecordRow(record)));
@@ -254,9 +259,9 @@ function createRecordRow(record: TopRecordI): HTMLLIElement {
   return row;
 }
 
-function renderComments(page: HTMLElement, comments: CommentI[]): void {
-  const list = page.querySelector<HTMLElement>('[data-game-comments]');
-  const title = page.querySelector<HTMLElement>('[data-comments-title]');
+function renderComments(body: HTMLElement, comments: CommentI[]): void {
+  const list = body.querySelector<HTMLElement>('[data-game-comments]');
+  const title = body.querySelector<HTMLElement>('[data-comments-title]');
 
   if (title) title.textContent = `Comments (${comments.length})`;
   if (!list) return;

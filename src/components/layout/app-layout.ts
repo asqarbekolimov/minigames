@@ -103,10 +103,10 @@ export function createAppLayout(): AppLayout {
     const closeTimer = setTimeout(finishClose, 200);
   };
 
-  const openGameDetails = () => {
-    if (gameDetailsModal) return;
+  const openGameDetails = (gameSlug: string) => {
+    if (gameDetailsModal || !gameSlug) return;
     isSessionActive();
-    gameDetailsModal = createGameDetails();
+    gameDetailsModal = createGameDetails(gameSlug);
     layout.append(gameDetailsModal);
     document.body.classList.add('game-details-open');
     gameDetailsModal.addEventListener('game-details-close', closeGameDetails, { once: true });
@@ -122,7 +122,8 @@ export function createAppLayout(): AppLayout {
   document.addEventListener('click', (event) => {
     if (!(event.target instanceof Element)) return;
 
-    if (event.target.closest('[data-open-game-details]')) openGameDetails();
+    const trigger = event.target.closest<HTMLElement>('[data-open-game-details]');
+    if (trigger) openGameDetails(trigger.dataset.gameSlug ?? '');
   });
 
   globalThis.addEventListener('open-auth-modal', (event) => {

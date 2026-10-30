@@ -81,7 +81,7 @@ function createCard(game: GameCardI): HTMLElement {
         <span><span class="game-card__heart" aria-hidden="true">${heartIcon}</span>${formatLikes(game.likesCount)}</span>
       </div>
     </div>
-    <button class="game-card__trigger" type="button" aria-label="View details for ${game.name}" data-open-game-details></button>
+    <button class="game-card__trigger" type="button" aria-label="View details for ${game.name}" data-open-game-details data-game-slug="${game.slug}"></button>
   `;
 
   return card;
