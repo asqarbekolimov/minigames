@@ -49,5 +49,8 @@ describe('createGameCards', () => {
     const likeText = container.querySelectorAll(':scope .ratings__item span')[1];
     expect(likeText?.textContent).toBe('31.2K');
     expect(container.querySelector('[data-open-game-details]')?.textContent).toBe('Details');
+    expect(container.querySelector<HTMLElement>('[data-open-game-details]')?.dataset.gameSlug).toBe(
+      'tukoni',
+    );
   });
 });

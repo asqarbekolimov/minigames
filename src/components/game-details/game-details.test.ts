@@ -1,8 +1,27 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { CommentI, GameDetailsI, MockResponseI } from '@/utils/type';
+import type { CommentI, GameDetailsI } from '@/utils/type';
 
-const authMocks = vi.hoisted(() => ({ isSessionActive: vi.fn(() => true) }));
-vi.mock('@/services/auth', () => ({ isSessionActive: authMocks.isSessionActive }));
+const authMocks = vi.hoisted(() => ({
+  isSessionActive: vi.fn(() => true),
+  getCurrentSession: vi.fn<() => { email: string } | undefined>(() => ({
+    email: 'alex@example.com',
+  })),
+}));
+
+const apiMocks = vi.hoisted(() => ({
+  getGameDetails: vi.fn(),
+  getComments: vi.fn(),
+}));
+
+vi.mock('@/services/auth', () => ({
+  isSessionActive: authMocks.isSessionActive,
+  getCurrentSession: authMocks.getCurrentSession,
+}));
+
+vi.mock('@/services/api', () => ({
+  getGameDetails: apiMocks.getGameDetails,
+  getComments: apiMocks.getComments,
+}));
 
 import { createGameDetails } from '@/components/game-details/game-details';
 
@@ -50,33 +69,33 @@ const comments: CommentI[] = [
   },
 ];
 
-function payload<T>(data: T): Response {
-  return { ok: true, status: 200, json: async () => ({ data }) as MockResponseI<T> } as Response;
-}
+async function renderDetails(slug = 'tukoni'): Promise<HTMLElement> {
+  const page = createGameDetails(slug);
 
-const fetchMock = vi.fn();
+  await vi.waitFor(() => expect(page.querySelector('.game-details__title')).not.toBeNull());
+
+  return page;
+}
 
 describe('createGameDetails', () => {
   beforeEach(() => {
-    fetchMock.mockReset();
+    apiMocks.getGameDetails.mockReset().mockResolvedValue({ data: game });
+    apiMocks.getComments.mockReset().mockResolvedValue({ data: comments });
     authMocks.isSessionActive.mockReturnValue(true);
-    vi.stubGlobal('fetch', fetchMock);
+    authMocks.getCurrentSession.mockReturnValue({ email: 'alex@example.com' });
   });
 
   afterEach(() => {
-    vi.unstubAllGlobals();
+    vi.clearAllMocks();
   });
 
-  it('hydrates the dialog from the mock endpoints', async () => {
-    fetchMock.mockImplementation((input: RequestInfo | URL) =>
-      Promise.resolve(payload(String(input).includes('game-tukoni') ? game : comments)),
-    );
+  it('hydrates the dialog from the games API using the selected slug', async () => {
+    const page = await renderDetails();
 
-    const page = createGameDetails();
-
-    await vi.waitFor(() =>
-      expect(page.querySelector('.game-details__title')?.textContent).toBe('Tukoni'),
-    );
+    expect(apiMocks.getGameDetails).toHaveBeenCalledWith('tukoni', 'alex@example.com');
+    expect(apiMocks.getComments).toHaveBeenCalledWith('tukoni', { userEmail: 'alex@example.com' });
+    expect(page.querySelector('.game-details__title')?.textContent).toBe('Tukoni');
+    expect(page.querySelector('.game-details__hero-image')?.getAttribute('src')).toBe('/hero.jpg');
     expect(page.querySelector('[data-game-rating]')?.textContent).toBe('4.9');
     expect(page.querySelector('[data-game-likes]')?.textContent).toBe('31.2K');
     expect(page.querySelector('[data-spec-genre]')?.textContent).toBe('Puzzle');
@@ -85,18 +104,57 @@ describe('createGameDetails', () => {
     expect(page.querySelector('[data-comments-title]')?.textContent).toBe('Comments (2)');
   });
 
-  it('keeps the fallback content when the data cannot be loaded', async () => {
-    fetchMock.mockResolvedValue({ ok: false, status: 500, json: async () => ({}) } as Response);
+  it('omits the user email from the requests when there is no session', async () => {
+    authMocks.getCurrentSession.mockReturnValue(undefined);
 
-    const page = createGameDetails();
+    await renderDetails();
 
-    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
-    expect(page.querySelector('.game-details__title')?.textContent).toBe('Tukoni: Forest Keepers');
+    expect(apiMocks.getGameDetails).toHaveBeenCalledWith('tukoni', undefined);
+    expect(apiMocks.getComments).toHaveBeenCalledWith('tukoni', { userEmail: undefined });
   });
 
-  it('toggles the favorite button state and label', () => {
-    fetchMock.mockImplementation(() => Promise.resolve(payload(game)));
-    const page = createGameDetails();
+  it('shows an error banner and retries the request on failure', async () => {
+    apiMocks.getGameDetails.mockRejectedValueOnce(new Error('Game not found'));
+    const page = createGameDetails('missing');
+
+    await vi.waitFor(() =>
+      expect(page.querySelector('.error-banner__message')?.textContent).toBe('Game not found'),
+    );
+    expect(page.querySelector('.game-details__close')).not.toBeNull();
+
+    page.querySelector<HTMLButtonElement>('.error-banner__retry')?.click();
+
+    await vi.waitFor(() =>
+      expect(page.querySelector('.game-details__title')?.textContent).toBe('Tukoni'),
+    );
+    expect(apiMocks.getGameDetails).toHaveBeenCalledTimes(2);
+  });
+
+  it('renders a loading skeleton before the data arrives', () => {
+    apiMocks.getGameDetails.mockReturnValue(new Promise(() => {}));
+    apiMocks.getComments.mockReturnValue(new Promise(() => {}));
+
+    const page = createGameDetails('tukoni');
+
+    expect(page.querySelector('.skeleton--details')).not.toBeNull();
+  });
+
+  it('reflects the liked state returned by the API', async () => {
+    apiMocks.getGameDetails.mockResolvedValue({
+      data: { ...game, isLikedByCurrentUser: true },
+    });
+
+    const page = await renderDetails();
+    const favorite = page.querySelector<HTMLButtonElement>('.game-details__favorite');
+
+    expect(favorite?.getAttribute('aria-pressed')).toBe('true');
+    expect(page.querySelector('.game-details__favorite-label')?.textContent).toBe(
+      'Remove from Favorites',
+    );
+  });
+
+  it('toggles the favorite button state and label', async () => {
+    const page = await renderDetails();
     const favorite = page.querySelector<HTMLButtonElement>('.game-details__favorite');
 
     favorite?.click();
@@ -110,11 +168,7 @@ describe('createGameDetails', () => {
   });
 
   it('increments and decrements a comment like count', async () => {
-    fetchMock.mockImplementation((input: RequestInfo | URL) =>
-      Promise.resolve(payload(String(input).includes('game-tukoni') ? game : comments)),
-    );
-    const page = createGameDetails();
-    await vi.waitFor(() => expect(page.querySelectorAll('.comment')).toHaveLength(2));
+    const page = await renderDetails();
 
     const likeButtons = page.querySelectorAll<HTMLButtonElement>('.comment__like');
     const target = likeButtons[1];
@@ -126,9 +180,8 @@ describe('createGameDetails', () => {
     expect(target.querySelector('.comment__like-count')?.textContent).toBe('0');
   });
 
-  it('resizes the comment textarea on input and prevents submit navigation', () => {
-    fetchMock.mockImplementation(() => Promise.resolve(payload(game)));
-    const page = createGameDetails();
+  it('resizes the comment textarea on input and prevents submit navigation', async () => {
+    const page = await renderDetails();
     const textarea = page.querySelector<HTMLTextAreaElement>('.comment-form__textarea');
 
     textarea?.dispatchEvent(new Event('input'));
@@ -140,10 +193,9 @@ describe('createGameDetails', () => {
     expect(submit.defaultPrevented).toBe(true);
   });
 
-  it('blocks a protected action and requests authentication when there is no session', () => {
-    fetchMock.mockImplementation(() => Promise.resolve(payload(game)));
+  it('blocks a protected action and requests authentication when there is no session', async () => {
+    const page = await renderDetails();
     authMocks.isSessionActive.mockReturnValue(false);
-    const page = createGameDetails();
     const listener = vi.fn();
     globalThis.addEventListener('auth-required-for-action', listener);
     const favorite = page.querySelector<HTMLButtonElement>('.game-details__favorite');
@@ -156,8 +208,7 @@ describe('createGameDetails', () => {
   });
 
   it('dispatches a close event from the close button and the backdrop', () => {
-    fetchMock.mockImplementation(() => Promise.resolve(payload(game)));
-    const page = createGameDetails();
+    const page = createGameDetails('tukoni');
     const close = vi.fn();
     page.addEventListener('game-details-close', close);
 
