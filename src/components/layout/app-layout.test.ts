@@ -108,11 +108,12 @@ describe('createAppLayout', () => {
     const layout = createAppLayout();
     const trigger = document.createElement('button');
     trigger.dataset.openGameDetails = '';
+    trigger.dataset.gameSlug = 'tukoni';
     layout.element.append(trigger);
     document.body.append(layout.element);
 
     trigger.click();
-    expect(mocks.createGameDetails).toHaveBeenCalled();
+    expect(mocks.createGameDetails).toHaveBeenCalledWith('tukoni');
     const modal = layout.element.querySelector('.game-details-page');
     expect(modal).not.toBeNull();
 
@@ -137,6 +138,7 @@ describe('createAppLayout', () => {
     const layout = createAppLayout();
     const trigger = document.createElement('button');
     trigger.dataset.openGameDetails = '';
+    trigger.dataset.gameSlug = 'tukoni';
     layout.element.append(trigger);
     document.body.append(layout.element);
 
@@ -184,6 +186,7 @@ describe('createAppLayout', () => {
     const layout = createAppLayout();
     const trigger = document.createElement('button');
     trigger.dataset.openGameDetails = '';
+    trigger.dataset.gameSlug = 'tukoni';
     layout.element.append(trigger);
     document.body.append(layout.element);
 
@@ -204,6 +207,7 @@ describe('createAppLayout', () => {
     const layout = createAppLayout();
     const trigger = document.createElement('button');
     trigger.dataset.openGameDetails = '';
+    trigger.dataset.gameSlug = 'tukoni';
     layout.element.append(trigger);
     document.body.append(layout.element);
 
@@ -211,5 +215,17 @@ describe('createAppLayout', () => {
     trigger.click();
 
     expect(mocks.createGameDetails).toHaveBeenCalled();
+  });
+
+  it('ignores a details trigger without a game slug', () => {
+    const layout = createAppLayout();
+    const trigger = document.createElement('button');
+    trigger.dataset.openGameDetails = '';
+    layout.element.append(trigger);
+    document.body.append(layout.element);
+
+    trigger.click();
+
+    expect(mocks.createGameDetails).not.toHaveBeenCalled();
   });
 });

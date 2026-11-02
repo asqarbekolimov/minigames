@@ -30,6 +30,12 @@
   }
 }
 
+@keyframes comment-like-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @keyframes game-details-dialog-out {
   from {
     opacity: 1;
@@ -246,9 +252,41 @@ body.game-details-open {
       color: $on-primary;
     }
 
-    &.is-active .game-details__icon--heart {
-      color: $like;
+    &.is-active {
+      border-color: rgba($like, 0.4);
+      background: rgba($like, 0.12);
+
+      .game-details__icon--heart,
+      .game-details__favorite-label {
+        color: $like;
+      }
     }
+
+    &.is-loading {
+      cursor: progress;
+
+      .game-details__icon--heart {
+        display: none;
+      }
+
+      .game-details__favorite-spinner {
+        display: inline-block;
+      }
+    }
+
+    &:disabled {
+      cursor: progress;
+    }
+  }
+
+  &__favorite-spinner {
+    display: none;
+    width: 14px;
+    height: 14px;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    border-radius: radius('full');
+    animation: comment-like-spin 700ms linear infinite;
   }
 
   &__section {
@@ -357,6 +395,38 @@ body.game-details-open {
   align-items: center;
   gap: size('2');
 
+  &--pending {
+    opacity: 0.6;
+  }
+
+  &--locked {
+    padding: size('1') size('2');
+    border: 1px dashed $outline-variant;
+    border-radius: radius('md');
+    background: $surface;
+  }
+
+  &__locked-text {
+    flex: 1;
+    color: $on-bg;
+    font-size: font-size('body-sm');
+  }
+
+  &__sign-in {
+    padding: size('1') size('2');
+    border: 1.5px solid $on-primary;
+    border-radius: radius('sm');
+    background: $primary;
+    color: $on-primary;
+    font-size: font-size('label-md');
+    font-weight: font-weight('bold');
+    transition: background-color 200ms ease;
+
+    &:hover {
+      background: $primary-high;
+    }
+  }
+
   &__avatar {
     display: inline-flex;
     width: size('5');
@@ -395,6 +465,11 @@ body.game-details-open {
       outline: none;
       background: $surface;
     }
+
+    &:disabled {
+      background: $surface;
+      cursor: not-allowed;
+    }
   }
 
   &__send {
@@ -412,6 +487,11 @@ body.game-details-open {
 
     &:hover {
       background: $bg-footer;
+    }
+
+    &:disabled {
+      background: $bg-footer-low;
+      cursor: not-allowed;
     }
   }
 }
@@ -507,8 +587,16 @@ body.game-details-open {
     align-self: flex-start;
     align-items: center;
     gap: size('05');
+    margin-left: calc(size('05') * -1);
+    padding: size('05') size('1');
+    border: 1px solid transparent;
+    border-radius: radius('full');
     color: $on-bg;
-    transition: color 200ms ease;
+    transition:
+      color 200ms ease,
+      background-color 200ms ease,
+      border-color 200ms ease,
+      transform 120ms ease;
 
     .game-details__icon {
       width: 13px;
@@ -519,15 +607,57 @@ body.game-details-open {
       color: $on-primary;
       font-size: font-size('label-md');
       font-weight: font-weight('bold');
+      transition: color 200ms ease;
     }
 
     &:hover {
       color: $on-primary;
+      background: rgba($like, 0.08);
     }
 
-    &.is-active .game-details__icon--heart {
-      color: $like;
+    &:active {
+      transform: scale(0.92);
     }
+
+    &.is-active {
+      border-color: rgba($like, 0.4);
+      background: rgba($like, 0.14);
+      color: $like;
+
+      .game-details__icon--heart {
+        color: $like;
+      }
+
+      .comment__like-count {
+        color: $like;
+      }
+    }
+
+    &.is-loading {
+      cursor: progress;
+
+      .game-details__icon--heart {
+        display: none;
+      }
+
+      .comment__like-spinner {
+        display: inline-block;
+      }
+    }
+
+    &:disabled {
+      cursor: progress;
+    }
+  }
+
+  &__like-spinner {
+    display: none;
+    width: 12px;
+    height: 12px;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    border-radius: radius('full');
+    animation: comment-like-spin 700ms linear infinite;
   }
 }
 

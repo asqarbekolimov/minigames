@@ -48,7 +48,7 @@ function createCard(gameItem: GameCardI): HTMLElement {
           </div>
           <div class="game__price ${priceClass}">${gameItem.price}</div>
         </div>
-        <button class="detail-button" type="button" data-open-game-details>Details</button>
+        <button class="detail-button" type="button" data-open-game-details data-game-slug="${gameItem.slug}">Details</button>
       </div>
     </div>
   `;
