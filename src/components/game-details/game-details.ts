@@ -1,7 +1,20 @@
-import { createErrorBanner, createSkeleton } from '@/components/common/async-content';
-import { getComments, getGameDetails } from '@/services/api';
+import {
+  createAsyncContent,
+  createErrorBanner,
+  createSkeleton,
+} from '@/components/common/async-content';
+import { showSnackbar } from '@/components/common/snackbar';
+import {
+  ApiError,
+  getComments,
+  getGameDetails,
+  postComment,
+  toggleCommentLike,
+  toggleFavorite,
+} from '@/services/api';
 import { getCurrentSession, isSessionActive } from '@/services/auth';
-import type { CommentI, GameDetailsI, TopRecordI } from '@/utils/type';
+import { deriveDisplayName, type AppSession } from '@/services/session';
+import type { ApiResponseI, CommentI, GameDetailsI, TopRecordI } from '@/utils/type';
 import './game-details.scss';
 
 function requestAuthentication(): void {
@@ -9,6 +22,7 @@ function requestAuthentication(): void {
 }
 
 const COMMENT_MAX_HEIGHT = 88;
+const COMMENT_MAX_LENGTH = 500;
 
 const starIcon = `<svg class="game-details__icon game-details__icon--star" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8.85 17.825L12 15.925L15.15 17.85L14.325 14.25L17.1 11.85L13.45 11.525L12 8.125L10.55 11.5L6.9 11.825L9.675 14.25L8.85 17.825ZM5.825 22L7.45 14.975L2 10.25L9.2 9.625L12 3L14.8 9.625L22 10.25L16.55 14.975L18.175 22L12 18.275L5.825 22Z" fill="currentColor"/></svg>`;
 
@@ -34,6 +48,7 @@ export function createGameDetails(gameSlug: string): HTMLElement {
   `;
 
   setupDismiss(page);
+  page.addEventListener('game-details-resume', () => void hydrate(page, gameSlug));
   void hydrate(page, gameSlug);
 
   return page;
@@ -57,16 +72,15 @@ async function hydrate(page: HTMLElement, gameSlug: string): Promise<void> {
 
   body.replaceChildren(createSkeleton({ variant: 'details', count: 1 }));
 
-  const userEmail = getCurrentSession()?.email;
+  const userEmail = isSessionActive() ? getCurrentSession()?.email : undefined;
 
   try {
-    const [gameResponse, commentsResponse] = await Promise.all([
-      getGameDetails(gameSlug, userEmail),
-      getComments(gameSlug, { userEmail }),
-    ]);
+    const gameResponse = await getGameDetails(gameSlug, userEmail);
 
-    renderGameDetails(page, body, gameResponse.data, commentsResponse.data);
+    renderGameDetails(page, body, gameResponse.data, gameSlug);
   } catch (error) {
+    showSnackbar({ message: getErrorMessage(error), variant: 'error' });
+
     body.replaceChildren(
       createErrorBanner({
         message: getErrorMessage(error),
@@ -87,7 +101,7 @@ function renderGameDetails(
   page: HTMLElement,
   body: HTMLElement,
   game: GameDetailsI,
-  comments: CommentI[],
+  gameSlug: string,
 ): void {
   const dialog = page.querySelector<HTMLElement>('.game-details');
   const hero = page.querySelector<HTMLElement>('.game-details__hero');
@@ -107,7 +121,8 @@ function renderGameDetails(
     hero.prepend(heroImage);
   }
 
-  const isLiked = game.isLikedByCurrentUser;
+  const isFavorited = game.isLikedByCurrentUser;
+  const session = isSessionActive() ? getCurrentSession() : undefined;
 
   body.innerHTML = `
     <div class="game-details__header">
@@ -129,9 +144,10 @@ function renderGameDetails(
 
     <div class="game-details__actions">
       <button class="game-details__play" type="button">Play Now</button>
-      <button class="game-details__favorite${isLiked ? ' is-active' : ''}" type="button" aria-pressed="${isLiked}" aria-label="${isLiked ? 'Remove from Favorites' : 'Add to Favorites'}">
+      <button class="game-details__favorite${isFavorited ? ' is-active' : ''}" type="button" aria-pressed="${isFavorited}" aria-label="${isFavorited ? 'Remove from Favorites' : 'Add to Favorites'}">
         ${heartIcon}
-        <span class="game-details__favorite-label">${isLiked ? 'Remove from Favorites' : 'Add to Favorites'}</span>
+        <span class="game-details__favorite-label">${isFavorited ? 'Remove from Favorites' : 'Add to Favorites'}</span>
+        <span class="game-details__favorite-spinner" aria-hidden="true"></span>
       </button>
     </div>
 
@@ -145,60 +161,295 @@ function renderGameDetails(
     <section class="game-details__section" aria-labelledby="game-details-comments-title">
       <h3 class="game-details__section-title" id="game-details-comments-title" data-comments-title>Comments</h3>
 
-      <form class="comment-form">
-        <span class="comment-form__avatar" aria-hidden="true">U</span>
-        <label class="visually-hidden" for="game-details-comment">Add a comment</label>
-        <textarea
-          class="comment-form__textarea"
-          id="game-details-comment"
-          name="comment"
-          rows="1"
-          placeholder="Write a comment..."
-        ></textarea>
-        <button class="comment-form__send" type="submit" aria-label="Send comment">${sendIcon}</button>
-      </form>
+      ${session ? renderCommentForm(session) : renderLockedCommentForm()}
 
-      <ul class="comments" data-game-comments></ul>
+      <div data-comments-content></div>
     </section>
   `;
 
   renderRecords(body, game.topRecords);
-  renderComments(body, comments);
-  setupFavoriteToggle(page);
-  setupCommentForm(page);
-  setupCommentLikes(page);
+  setupFavoriteToggle(page, gameSlug);
+
+  const commentsElement = body.querySelector<HTMLElement>('[data-comments-content]');
+  const comments = commentsElement
+    ? createCommentsSection(commentsElement, body, gameSlug)
+    : undefined;
+
+  if (comments) {
+    setupCommentLikes(commentsElement ?? body);
+    setupCommentForm(body, gameSlug, () => comments.reload());
+  }
 }
 
-function setupFavoriteToggle(page: HTMLElement): void {
+function renderCommentForm(session: AppSession): string {
+  return `
+    <form class="comment-form">
+      <span class="comment-form__avatar" aria-hidden="true">${getAvatarInitial(session.displayName)}</span>
+      <label class="visually-hidden" for="game-details-comment">Add a comment</label>
+      <textarea
+        class="comment-form__textarea"
+        id="game-details-comment"
+        name="comment"
+        rows="1"
+        maxlength="${COMMENT_MAX_LENGTH}"
+        placeholder="Write a comment..."
+      ></textarea>
+      <button class="comment-form__send" type="submit" aria-label="Send comment">${sendIcon}</button>
+    </form>
+  `;
+}
+
+function renderLockedCommentForm(): string {
+  return `
+    <div class="comment-form comment-form--locked">
+      <span class="comment-form__avatar" aria-hidden="true">?</span>
+      <p class="comment-form__locked-text">Sign in to join the conversation.</p>
+      <button class="comment-form__sign-in" type="button" data-comment-sign-in>Sign in</button>
+    </div>
+  `;
+}
+
+function createCommentsSection(
+  host: HTMLElement,
+  body: HTMLElement,
+  gameSlug: string,
+): { reload: () => Promise<void> } {
+  const comments = createAsyncContent<ApiResponseI<CommentI[]>>({
+    load: async () => {
+      const response = await getComments(gameSlug, {
+        limit: 3,
+        sort: 'newest',
+        userEmail: isSessionActive() ? getCurrentSession()?.email : undefined,
+      });
+
+      updateCommentsTitle(body, response.meta?.totalComments ?? response.data.length);
+
+      return response;
+    },
+    render: (response) => createCommentsList(response.data),
+    isEmpty: (response) => response.data.length === 0,
+    renderSkeleton: () => createSkeleton({ variant: 'text', count: 3 }),
+    errorMessage: getErrorMessage,
+    retryLabel: 'Try again',
+    empty: {
+      title: 'No comments yet',
+      message: 'Be the first to share your thoughts about this game.',
+    },
+    onError: (error) => {
+      showSnackbar({ message: getErrorMessage(error), variant: 'error' });
+    },
+  });
+
+  host.append(comments.element);
+  void comments.reload();
+
+  return comments;
+}
+
+function updateCommentsTitle(body: HTMLElement, totalComments: number): void {
+  const title = body.querySelector<HTMLElement>('[data-comments-title]');
+  if (title) title.textContent = `Comments (${totalComments})`;
+}
+
+function setupFavoriteToggle(page: HTMLElement, gameSlug: string): void {
   const favoriteButton = page.querySelector<HTMLButtonElement>('.game-details__favorite');
-  const label = favoriteButton?.querySelector<HTMLElement>('.game-details__favorite-label');
+  if (!favoriteButton) return;
 
-  favoriteButton?.addEventListener('click', () => {
-    if (!isSessionActive()) {
-      requestAuthentication();
-      return;
-    }
-
-    const isActive = favoriteButton.classList.toggle('is-active');
-    favoriteButton.setAttribute('aria-pressed', String(isActive));
-    favoriteButton.setAttribute(
-      'aria-label',
-      isActive ? 'Remove from Favorites' : 'Add to Favorites',
-    );
-    if (label) label.textContent = isActive ? 'Remove from Favorites' : 'Add to Favorites';
+  favoriteButton.addEventListener('click', () => {
+    void toggleFavoriteState(page, favoriteButton, gameSlug);
   });
 }
 
-function setupCommentForm(page: HTMLElement): void {
-  const form = page.querySelector<HTMLFormElement>('.comment-form');
-  const textarea = page.querySelector<HTMLTextAreaElement>('.comment-form__textarea');
+async function toggleFavoriteState(
+  page: HTMLElement,
+  button: HTMLButtonElement,
+  gameSlug: string,
+): Promise<void> {
+  if (!isSessionActive()) {
+    showSnackbar({ message: 'Sign in to add favorites.', variant: 'warning' });
+    requestAuthentication();
+    return;
+  }
 
-  form?.addEventListener('submit', (event) => {
-    event.preventDefault();
+  const session = getCurrentSession();
 
-    if (!isSessionActive()) requestAuthentication();
+  if (!session || button.dataset.pending === 'true') return;
+
+  setFavoritePending(button, true);
+
+  try {
+    const response = await toggleFavorite(gameSlug, session.email);
+
+    applyFavoriteState(page, button, response.data.isFavorited, response.data.likesCount);
+  } catch (error) {
+    const isAmbiguous = isAmbiguousRequestError(error);
+
+    showSnackbar({
+      message: isAmbiguous
+        ? 'We could not confirm your favorite change. Check the button before trying again.'
+        : getErrorMessage(error),
+      variant: isAmbiguous ? 'warning' : 'error',
+    });
+  } finally {
+    setFavoritePending(button, false);
+  }
+}
+
+function setFavoritePending(button: HTMLButtonElement, isPending: boolean): void {
+  button.disabled = isPending;
+  button.classList.toggle('is-loading', isPending);
+  button.setAttribute('aria-busy', String(isPending));
+  button.dataset.pending = String(isPending);
+}
+
+function applyFavoriteState(
+  page: HTMLElement,
+  button: HTMLButtonElement,
+  isFavorited: boolean,
+  likesCount: number,
+): void {
+  const labelText = isFavorited ? 'Remove from Favorites' : 'Add to Favorites';
+
+  button.classList.toggle('is-active', isFavorited);
+  button.setAttribute('aria-pressed', String(isFavorited));
+  button.setAttribute('aria-label', labelText);
+
+  const label = button.querySelector<HTMLElement>('.game-details__favorite-label');
+  if (label) label.textContent = labelText;
+
+  const likes = page.querySelector<HTMLElement>('[data-game-likes]');
+  if (likes) likes.textContent = formatCompactNumber(likesCount);
+}
+
+function setupCommentForm(
+  body: HTMLElement,
+  gameSlug: string,
+  refreshComments: () => Promise<void>,
+): void {
+  const signInButton = body.querySelector<HTMLButtonElement>('[data-comment-sign-in]');
+  signInButton?.addEventListener('click', () => {
+    showSnackbar({ message: 'Sign in to comment.', variant: 'warning' });
+    requestAuthentication();
   });
-  textarea?.addEventListener('input', () => resizeTextarea(textarea));
+
+  const form = body.querySelector<HTMLFormElement>('.comment-form');
+  const textarea = body.querySelector<HTMLTextAreaElement>('.comment-form__textarea');
+  const sendButton = body.querySelector<HTMLButtonElement>('.comment-form__send');
+
+  if (!form || !textarea || !sendButton) return;
+
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    void submitComment(form, textarea, sendButton, gameSlug, refreshComments);
+  });
+
+  textarea.addEventListener('input', () => resizeTextarea(textarea));
+
+  textarea.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' || event.shiftKey) return;
+
+    event.preventDefault();
+    form.requestSubmit();
+  });
+}
+
+async function submitComment(
+  form: HTMLFormElement,
+  textarea: HTMLTextAreaElement,
+  sendButton: HTMLButtonElement,
+  gameSlug: string,
+  refreshComments: () => Promise<void>,
+): Promise<void> {
+  if (textarea.disabled) return;
+
+  if (!isSessionActive()) {
+    requestAuthentication();
+    return;
+  }
+
+  const session = getCurrentSession();
+  if (!session) {
+    requestAuthentication();
+    return;
+  }
+
+  const text = textarea.value.trim();
+
+  if (!text) {
+    showSnackbar({ message: 'Please write a comment before sending.', variant: 'warning' });
+    textarea.focus();
+    return;
+  }
+
+  if (text.length > COMMENT_MAX_LENGTH) {
+    showSnackbar({
+      message: `Comments can be at most ${COMMENT_MAX_LENGTH} characters long.`,
+      variant: 'warning',
+    });
+    textarea.focus();
+    return;
+  }
+
+  setCommentFormPending(form, textarea, sendButton, true);
+
+  let wasCreated = false;
+
+  try {
+    await postComment(gameSlug, {
+      userEmail: session.email,
+      authorName: formatAuthorName(session),
+      text,
+    });
+    wasCreated = true;
+  } catch (error) {
+    const isAmbiguous = isAmbiguousRequestError(error);
+
+    showSnackbar({
+      message: isAmbiguous
+        ? 'We could not confirm whether your comment was posted. Check the list before trying again.'
+        : getErrorMessage(error),
+      variant: isAmbiguous ? 'warning' : 'error',
+    });
+  } finally {
+    setCommentFormPending(form, textarea, sendButton, false);
+  }
+
+  if (!wasCreated) return;
+
+  textarea.value = '';
+  resizeTextarea(textarea);
+  showSnackbar({ message: 'Your comment has been posted.', variant: 'success' });
+
+  await refreshComments();
+}
+
+function setCommentFormPending(
+  form: HTMLFormElement,
+  textarea: HTMLTextAreaElement,
+  sendButton: HTMLButtonElement,
+  isPending: boolean,
+): void {
+  form.classList.toggle('comment-form--pending', isPending);
+  form.setAttribute('aria-busy', String(isPending));
+  textarea.disabled = isPending;
+  sendButton.disabled = isPending;
+}
+
+function isAmbiguousRequestError(error: unknown): boolean {
+  if (!(error instanceof ApiError)) return true;
+
+  return error.status === 0 || error.status === 408 || error.status >= 500;
+}
+
+function formatAuthorName(session: AppSession): string {
+  const name = [...session.displayName.trim()].slice(0, 30).join('');
+  return name.length >= 2 ? name : deriveDisplayName(session.email);
+}
+
+function getAvatarInitial(name: string): string {
+  const firstCharacter = [...name.trim()][0];
+
+  return firstCharacter ? firstCharacter.toUpperCase() : 'U';
 }
 
 function resizeTextarea(textarea: HTMLTextAreaElement): void {
@@ -208,30 +459,67 @@ function resizeTextarea(textarea: HTMLTextAreaElement): void {
   textarea.style.overflowY = textarea.scrollHeight > COMMENT_MAX_HEIGHT ? 'auto' : 'hidden';
 }
 
-function setupCommentLikes(page: HTMLElement): void {
-  const list = page.querySelector<HTMLElement>('[data-game-comments]');
-
-  list?.addEventListener('click', (event) => {
+function setupCommentLikes(container: HTMLElement): void {
+  container.addEventListener('click', (event) => {
     if (!(event.target instanceof Element)) return;
 
     const button = event.target.closest<HTMLButtonElement>('.comment__like');
-    if (!button) return;
+    if (!button || button.disabled) return;
 
-    if (!isSessionActive()) {
-      requestAuthentication();
-      return;
-    }
-
-    const isActive = button.classList.toggle('is-active');
-    button.setAttribute('aria-pressed', String(isActive));
-    button.setAttribute('aria-label', isActive ? 'Remove like' : 'Like comment');
-
-    const count = button.querySelector<HTMLElement>('.comment__like-count');
-    if (count) {
-      const current = Number(count.textContent ?? '0');
-      count.textContent = String(isActive ? current + 1 : Math.max(0, current - 1));
-    }
+    void toggleCommentLikeState(button);
   });
+}
+
+async function toggleCommentLikeState(button: HTMLButtonElement): Promise<void> {
+  if (!isSessionActive()) {
+    showSnackbar({ message: 'Sign in to like comments.', variant: 'warning' });
+    requestAuthentication();
+    return;
+  }
+
+  const session = getCurrentSession();
+  const commentId = button.dataset.commentId;
+
+  if (!session || !commentId || button.dataset.pending === 'true') return;
+
+  setCommentLikePending(button, true);
+
+  try {
+    const response = await toggleCommentLike(commentId, session.email);
+
+    applyCommentLikeState(button, response.data.isLikedByCurrentUser, response.data.likesCount);
+  } catch (error) {
+    const isAmbiguous = isAmbiguousRequestError(error);
+
+    showSnackbar({
+      message: isAmbiguous
+        ? 'We could not confirm your like. Check the comment before trying again.'
+        : getErrorMessage(error),
+      variant: isAmbiguous ? 'warning' : 'error',
+    });
+  } finally {
+    setCommentLikePending(button, false);
+  }
+}
+
+function setCommentLikePending(button: HTMLButtonElement, isPending: boolean): void {
+  button.disabled = isPending;
+  button.classList.toggle('is-loading', isPending);
+  button.setAttribute('aria-busy', String(isPending));
+  button.dataset.pending = String(isPending);
+}
+
+function applyCommentLikeState(
+  button: HTMLButtonElement,
+  isLiked: boolean,
+  likesCount: number,
+): void {
+  button.classList.toggle('is-active', isLiked);
+  button.setAttribute('aria-pressed', String(isLiked));
+  button.setAttribute('aria-label', isLiked ? 'Remove like' : 'Like comment');
+
+  const count = button.querySelector<HTMLElement>('.comment__like-count');
+  if (count) count.textContent = String(likesCount);
 }
 
 function renderRecords(body: HTMLElement, records: TopRecordI[]): void {
@@ -259,14 +547,13 @@ function createRecordRow(record: TopRecordI): HTMLLIElement {
   return row;
 }
 
-function renderComments(body: HTMLElement, comments: CommentI[]): void {
-  const list = body.querySelector<HTMLElement>('[data-game-comments]');
-  const title = body.querySelector<HTMLElement>('[data-comments-title]');
-
-  if (title) title.textContent = `Comments (${comments.length})`;
-  if (!list) return;
-
+function createCommentsList(comments: CommentI[]): HTMLElement {
+  const list = document.createElement('ul');
+  list.classList.add('comments');
+  list.dataset.gameComments = '';
   list.replaceChildren(...comments.map((comment, index) => createCommentItem(comment, index)));
+
+  return list;
 }
 
 function createCommentItem(comment: CommentI, index: number): HTMLLIElement {
@@ -278,17 +565,36 @@ function createCommentItem(comment: CommentI, index: number): HTMLLIElement {
   item.innerHTML = `
     <div class="comment__header">
       <span class="comment__author">
-        <span class="comment__avatar comment__avatar--${avatarColorIndex}" aria-hidden="true">${getInitials(comment.authorName)}</span>
-        <span class="comment__name">${comment.authorName}</span>
+        <span class="comment__avatar comment__avatar--${avatarColorIndex}" aria-hidden="true"></span>
+        <span class="comment__name"></span>
       </span>
-      <time class="comment__date" datetime="${comment.createdAt}">${formatRelativeTime(comment.createdAt)}</time>
+      <time class="comment__date"></time>
     </div>
-    <p class="comment__text">${comment.text}</p>
+    <p class="comment__text"></p>
     <button class="comment__like${liked ? ' is-active' : ''}" type="button" aria-pressed="${liked}" aria-label="${liked ? 'Remove like' : 'Like comment'}">
       ${heartIcon}
-      <span class="comment__like-count">${comment.likesCount}</span>
+      <span class="comment__like-count"></span>
+      <span class="comment__like-spinner" aria-hidden="true"></span>
     </button>
   `;
+
+  const avatar = item.querySelector<HTMLElement>('.comment__avatar');
+  const author = item.querySelector<HTMLElement>('.comment__name');
+  const date = item.querySelector<HTMLTimeElement>('.comment__date');
+  const text = item.querySelector<HTMLElement>('.comment__text');
+  const likeButton = item.querySelector<HTMLButtonElement>('.comment__like');
+  const likeCount = item.querySelector<HTMLElement>('.comment__like-count');
+
+  if (likeButton) likeButton.dataset.commentId = comment.commentId;
+
+  if (avatar) avatar.textContent = getInitials(comment.authorName);
+  if (author) author.textContent = comment.authorName;
+  if (date) {
+    date.dateTime = comment.createdAt;
+    date.textContent = formatRelativeTime(comment.createdAt);
+  }
+  if (text) text.textContent = comment.text;
+  if (likeCount) likeCount.textContent = String(comment.likesCount);
 
   return item;
 }

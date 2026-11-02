@@ -28,6 +28,7 @@ export function createAppLayout(): AppLayout {
   const resumeSuspendedGameDetails = () => {
     if (!suspendedGameDetails) return;
     suspendedGameDetails.hidden = false;
+    suspendedGameDetails.dispatchEvent(new Event('game-details-resume'));
     suspendedGameDetails = undefined;
   };
 
