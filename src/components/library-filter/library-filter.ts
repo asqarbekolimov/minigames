@@ -1,10 +1,11 @@
 import './library-filter.scss';
+import { DEFAULT_SORT } from '@/app/url-state';
 import { createAsyncContent, createSkeleton } from '@/components/common/async-content';
 import { showSnackbar } from '@/components/common/snackbar';
 import { getCategories } from '@/services/api';
 import type { CategoryI, GameSort } from '@/utils/type';
 
-export const DEFAULT_SORT: GameSort = 'rating-desc';
+export { DEFAULT_SORT } from '@/app/url-state';
 
 const DEFAULT_CATEGORY = 'all';
 const CHIP_SKELETON_COUNT = 7;
@@ -26,6 +27,8 @@ const chevronIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="
 const checkIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M2.5 7.5L5.5 10.5L11.5 3.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
 export interface LibraryFilterOptions {
+  initialCategory?: string;
+  initialSort?: GameSort;
   onCategoryChange?: (category: string) => void;
   onSortChange?: (sort: GameSort) => void;
 }
@@ -34,6 +37,7 @@ export interface LibraryFilterController {
   element: HTMLElement;
   getCategory: () => string;
   getSort: () => GameSort;
+  setState: (state: { category?: string; sort?: GameSort }) => void;
 }
 
 function getErrorMessage(error: unknown): string {
@@ -48,18 +52,34 @@ export function createLibraryFilter(options: LibraryFilterOptions = {}): Library
   const filterSortBar = document.createElement('div');
   filterSortBar.classList.add('filter-sort-bar');
 
-  let activeCategory = DEFAULT_CATEGORY;
-  let selectedSort: GameSort = DEFAULT_SORT;
+  let activeCategory = options.initialCategory ?? DEFAULT_CATEGORY;
+  let selectedSort: GameSort = options.initialSort ?? DEFAULT_SORT;
   let isInitialized = false;
+
+  const hasInitialCategory = options.initialCategory !== undefined;
+
+  const updateChipStates = (): void => {
+    const buttons = chips.element.querySelectorAll<HTMLButtonElement>('.chip-button');
+    for (const button of buttons) {
+      const isActive = button.dataset.category === activeCategory;
+      button.classList.toggle('active', isActive);
+      button.setAttribute('aria-pressed', String(isActive));
+    }
+  };
 
   const renderChips = (categories: CategoryI[]): Node[] => {
     if (!isInitialized) {
       isInitialized = true;
 
-      const defaultCategory = categories.find((category) => category.isDefault);
-      if (defaultCategory) {
-        activeCategory = defaultCategory.slug;
-        options.onCategoryChange?.(activeCategory);
+      const hasRequestedCategory = categories.some((category) => category.slug === activeCategory);
+
+      if (!hasRequestedCategory || !hasInitialCategory) {
+        const fallback = categories.find((category) => category.isDefault) ?? categories.at(0);
+
+        if (fallback && (!hasInitialCategory || fallback.slug !== activeCategory)) {
+          activeCategory = fallback.slug;
+          options.onCategoryChange?.(activeCategory);
+        }
       }
     }
 
@@ -76,14 +96,7 @@ export function createLibraryFilter(options: LibraryFilterOptions = {}): Library
     if (slug === activeCategory || !slug) return;
 
     activeCategory = slug;
-
-    const buttons = chips.element.querySelectorAll<HTMLButtonElement>('.chip-button');
-    for (const button of buttons) {
-      const isActive = button.dataset.category === slug;
-      button.classList.toggle('active', isActive);
-      button.setAttribute('aria-pressed', String(isActive));
-    }
-
+    updateChipStates();
     options.onCategoryChange?.(slug);
   };
 
@@ -107,15 +120,26 @@ export function createLibraryFilter(options: LibraryFilterOptions = {}): Library
   const sortDropdown = createSortDropdown((value) => {
     selectedSort = value;
     options.onSortChange?.(value);
-  });
+  }, selectedSort);
 
-  filterSortBar.append(chips.element, sortDropdown);
+  filterSortBar.append(chips.element, sortDropdown.element);
   void chips.reload();
 
   return {
     element: filterSortBar,
     getCategory: () => activeCategory,
     getSort: () => selectedSort,
+    setState: (state) => {
+      if (state.category && state.category !== activeCategory) {
+        activeCategory = state.category;
+        updateChipStates();
+      }
+
+      if (state.sort && state.sort !== selectedSort) {
+        selectedSort = state.sort;
+        sortDropdown.setValue(state.sort);
+      }
+    },
   };
 }
 
@@ -133,7 +157,16 @@ function createChip(category: CategoryI, activeCategory: string): HTMLButtonElem
   return button;
 }
 
-function createSortDropdown(onSelect: (value: GameSort) => void): HTMLElement {
+interface SortDropdownController {
+  element: HTMLElement;
+  getValue: () => GameSort;
+  setValue: (value: GameSort) => void;
+}
+
+function createSortDropdown(
+  onSelect: (value: GameSort) => void,
+  initialValue: GameSort = DEFAULT_SORT,
+): SortDropdownController {
   const dropdown = document.createElement('div');
   dropdown.classList.add('sort-dropdown');
 
@@ -156,7 +189,7 @@ function createSortDropdown(onSelect: (value: GameSort) => void): HTMLElement {
   menu.classList.add('sort-dropdown__menu');
   menu.setAttribute('role', 'listbox');
 
-  let selectedValue: GameSort = DEFAULT_SORT;
+  let selectedValue: GameSort = initialValue;
 
   const createOption = (option: SortOptionI): HTMLLIElement => {
     const item = document.createElement('li');
@@ -241,5 +274,15 @@ function createSortDropdown(onSelect: (value: GameSort) => void): HTMLElement {
   updateLabel();
   dropdown.append(trigger, menu);
 
-  return dropdown;
+  return {
+    element: dropdown,
+    getValue: () => selectedValue,
+    setValue: (value) => {
+      if (value === selectedValue) return;
+
+      selectedValue = value;
+      renderMenu();
+      updateLabel();
+    },
+  };
 }

@@ -3,14 +3,18 @@ import type { CommentI, GameDetailsI } from '@/utils/type';
 
 const authMocks = vi.hoisted(() => ({
   isSessionActive: vi.fn(() => true),
-  getCurrentSession: vi.fn<() => { email: string } | undefined>(() => ({
+  getCurrentSession: vi.fn<() => { email: string; displayName: string } | undefined>(() => ({
     email: 'alex@example.com',
+    displayName: 'Alex',
   })),
 }));
 
 const apiMocks = vi.hoisted(() => ({
   getGameDetails: vi.fn(),
   getComments: vi.fn(),
+  toggleFavorite: vi.fn(),
+  toggleCommentLike: vi.fn(),
+  postComment: vi.fn(),
 }));
 
 vi.mock('@/services/auth', () => ({
@@ -19,8 +23,12 @@ vi.mock('@/services/auth', () => ({
 }));
 
 vi.mock('@/services/api', () => ({
+  ApiError: class ApiError extends Error {},
   getGameDetails: apiMocks.getGameDetails,
   getComments: apiMocks.getComments,
+  toggleFavorite: apiMocks.toggleFavorite,
+  toggleCommentLike: apiMocks.toggleCommentLike,
+  postComment: apiMocks.postComment,
 }));
 
 import { createGameDetails } from '@/components/game-details/game-details';
@@ -81,8 +89,15 @@ describe('createGameDetails', () => {
   beforeEach(() => {
     apiMocks.getGameDetails.mockReset().mockResolvedValue({ data: game });
     apiMocks.getComments.mockReset().mockResolvedValue({ data: comments });
+    apiMocks.toggleFavorite.mockReset().mockResolvedValue({
+      data: { isFavorited: false, likesCount: game.likesCount },
+    });
+    apiMocks.toggleCommentLike.mockReset().mockResolvedValue({
+      data: { isLikedByCurrentUser: false, likesCount: 0 },
+    });
+    apiMocks.postComment.mockReset().mockResolvedValue({ data: comments[0] });
     authMocks.isSessionActive.mockReturnValue(true);
-    authMocks.getCurrentSession.mockReturnValue({ email: 'alex@example.com' });
+    authMocks.getCurrentSession.mockReturnValue({ email: 'alex@example.com', displayName: 'Alex' });
   });
 
   afterEach(() => {
@@ -93,7 +108,10 @@ describe('createGameDetails', () => {
     const page = await renderDetails();
 
     expect(apiMocks.getGameDetails).toHaveBeenCalledWith('tukoni', 'alex@example.com');
-    expect(apiMocks.getComments).toHaveBeenCalledWith('tukoni', { userEmail: 'alex@example.com' });
+    expect(apiMocks.getComments).toHaveBeenCalledWith(
+      'tukoni',
+      expect.objectContaining({ userEmail: 'alex@example.com' }),
+    );
     expect(page.querySelector('.game-details__title')?.textContent).toBe('Tukoni');
     expect(page.querySelector('.game-details__hero-image')?.getAttribute('src')).toBe('/hero.jpg');
     expect(page.querySelector('[data-game-rating]')?.textContent).toBe('4.9');
@@ -110,7 +128,10 @@ describe('createGameDetails', () => {
     await renderDetails();
 
     expect(apiMocks.getGameDetails).toHaveBeenCalledWith('tukoni', undefined);
-    expect(apiMocks.getComments).toHaveBeenCalledWith('tukoni', { userEmail: undefined });
+    expect(apiMocks.getComments).toHaveBeenCalledWith(
+      'tukoni',
+      expect.objectContaining({ userEmail: undefined }),
+    );
   });
 
   it('shows an error banner and retries the request on failure', async () => {
@@ -154,30 +175,38 @@ describe('createGameDetails', () => {
   });
 
   it('toggles the favorite button state and label', async () => {
+    apiMocks.toggleFavorite
+      .mockResolvedValueOnce({ data: { isFavorited: true, likesCount: game.likesCount } })
+      .mockResolvedValueOnce({ data: { isFavorited: false, likesCount: game.likesCount } });
     const page = await renderDetails();
     const favorite = page.querySelector<HTMLButtonElement>('.game-details__favorite');
 
     favorite?.click();
-    expect(favorite?.getAttribute('aria-pressed')).toBe('true');
+    await vi.waitFor(() => expect(favorite?.getAttribute('aria-pressed')).toBe('true'));
     expect(page.querySelector('.game-details__favorite-label')?.textContent).toBe(
       'Remove from Favorites',
     );
 
     favorite?.click();
-    expect(favorite?.getAttribute('aria-pressed')).toBe('false');
+    await vi.waitFor(() => expect(favorite?.getAttribute('aria-pressed')).toBe('false'));
   });
 
   it('increments and decrements a comment like count', async () => {
+    apiMocks.toggleCommentLike
+      .mockResolvedValueOnce({ data: { isLikedByCurrentUser: true, likesCount: 1 } })
+      .mockResolvedValueOnce({ data: { isLikedByCurrentUser: false, likesCount: 0 } });
     const page = await renderDetails();
 
     const likeButtons = page.querySelectorAll<HTMLButtonElement>('.comment__like');
     const target = likeButtons[1];
     target.click();
-    expect(target.getAttribute('aria-pressed')).toBe('true');
+    await vi.waitFor(() => expect(target.getAttribute('aria-pressed')).toBe('true'));
     expect(target.querySelector('.comment__like-count')?.textContent).toBe('1');
 
     target.click();
-    expect(target.querySelector('.comment__like-count')?.textContent).toBe('0');
+    await vi.waitFor(() =>
+      expect(target.querySelector('.comment__like-count')?.textContent).toBe('0'),
+    );
   });
 
   it('resizes the comment textarea on input and prevents submit navigation', async () => {

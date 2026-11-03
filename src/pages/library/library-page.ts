@@ -1,15 +1,22 @@
-import { createLibraryFilter, DEFAULT_SORT } from '@/components/library-filter/library-filter';
+import { createLibraryFilter } from '@/components/library-filter/library-filter';
 import './library-page.scss';
 import { createGameCards } from '@/components/game-cards/game-cards';
 import { createAsyncContent, createSkeleton } from '@/components/common/async-content';
 import { showSnackbar } from '@/components/common/snackbar';
 import { getGames } from '@/services/api';
-import type { ApiMetaI, GameCardI, GamesQueryI } from '@/utils/type';
+import { APP_URL_CHANGE, readUrlState, updateUrlState, type AppUrlState } from '@/app/url-state';
+import type { ApiMetaI, GameCardI, GameSort, GamesQueryI } from '@/utils/type';
 
 const PAGE_SIZE = 6;
 const DESKTOP_PAGE_LIMIT = 4;
 const MOBILE_PAGE_LIMIT = 3;
 const MOBILE_MEDIA = '(max-width: 375.5px)';
+
+interface LibraryStateI {
+  category: string;
+  sort: GameSort;
+  page: number;
+}
 
 interface CardsSectionController {
   element: HTMLElement;
@@ -31,29 +38,95 @@ export function createLibraryPage(): HTMLElement {
 
   main.append(libraryPage);
   libraryPage.append(container);
-  container.append(renderLibraryPageContents());
+  container.append(renderLibraryPageContents(main, readUrlState()));
 
   return main;
 }
 
-function renderLibraryPageContents(): HTMLElement {
+function renderLibraryPageContents(main: HTMLElement, initial: AppUrlState): HTMLElement {
   const contents = document.createElement('div');
 
   contents.classList.add('library__contents');
 
-  const pagination = createPaginationControl((page) => cards.setQuery({ page }));
+  const state: LibraryStateI = {
+    category: initial.category,
+    sort: initial.sort,
+    page: initial.page,
+  };
+
+  const commitState = (patch: Partial<LibraryStateI>, mode: 'push' | 'replace' = 'push') => {
+    Object.assign(state, patch);
+    updateUrlState({ category: state.category, sort: state.sort, page: state.page }, mode);
+  };
+
+  const pagination = createPaginationControl((page) => {
+    if (page === state.page) return;
+
+    cards.setQuery({ page });
+    commitState({ page });
+  }, initial.page);
 
   const cards = createCardsSection(
-    { category: 'all', sort: DEFAULT_SORT, page: 1, limit: PAGE_SIZE },
+    {
+      category: initial.category,
+      sort: initial.sort,
+      page: initial.page,
+      limit: PAGE_SIZE,
+    },
     (meta) => pagination.update(meta?.page ?? 1, meta?.totalPages ?? 1),
   );
 
   const filter = createLibraryFilter({
-    onCategoryChange: (category) => cards.setQuery({ category, page: 1 }),
-    onSortChange: (sort) => cards.setQuery({ sort, page: 1 }),
+    initialCategory: initial.category,
+    initialSort: initial.sort,
+    onCategoryChange: (category) => {
+      if (category === state.category) return;
+
+      cards.setQuery({ category, page: 1 });
+      commitState({ category, page: 1 });
+    },
+    onSortChange: (sort) => {
+      if (sort === state.sort) return;
+
+      cards.setQuery({ sort, page: 1 });
+      commitState({ sort, page: 1 });
+    },
   });
 
   contents.append(libraryPageTitle(), filter.element, cards.element, pagination.element);
+
+  const applyUrlState = (urlState: AppUrlState): void => {
+    if (urlState.route !== 'library') return;
+    if (
+      urlState.category === state.category &&
+      urlState.sort === state.sort &&
+      urlState.page === state.page
+    ) {
+      return;
+    }
+
+    state.category = urlState.category;
+    state.sort = urlState.sort;
+    state.page = urlState.page;
+
+    filter.setState({ category: state.category, sort: state.sort });
+    cards.setQuery({ category: state.category, sort: state.sort, page: state.page });
+  };
+
+  const handleUrlChange = (event: Event): void => {
+    if (!main.isConnected) {
+      globalThis.removeEventListener('popstate', handleUrlChange);
+      globalThis.removeEventListener(APP_URL_CHANGE, handleUrlChange);
+      return;
+    }
+
+    const urlState = event instanceof CustomEvent ? (event.detail as AppUrlState) : readUrlState();
+
+    applyUrlState(urlState);
+  };
+
+  globalThis.addEventListener('popstate', handleUrlChange);
+  globalThis.addEventListener(APP_URL_CHANGE, handleUrlChange);
 
   return contents;
 }
@@ -150,14 +223,17 @@ function getVisiblePages(currentPage: number, totalPages: number, maxVisible: nu
   return Array.from({ length: maxVisible }, (_, index) => start + index);
 }
 
-function createPaginationControl(onPageChange: (page: number) => void): PaginationController {
+function createPaginationControl(
+  onPageChange: (page: number) => void,
+  initialPage = 1,
+): PaginationController {
   const paginationControl = document.createElement('nav');
   const mediaQuery = globalThis.matchMedia(MOBILE_MEDIA);
 
   paginationControl.classList.add('pagination__control');
   paginationControl.setAttribute('aria-label', 'Pagination');
 
-  let currentPage = 1;
+  let currentPage = Math.max(1, initialPage);
   let totalPages = 1;
 
   const handleViewportChange = (): void => {

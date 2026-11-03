@@ -36,6 +36,7 @@ function makeGame(slug: string): GameCardI {
 describe('createLibraryPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    globalThis.history.replaceState({}, '', '/library');
     mocks.getCategories.mockResolvedValue({ data: categories });
   });
 

@@ -86,6 +86,8 @@ export function createAuthForm(initialMode: 'login' | 'register' = 'login'): HTM
     if (mode === currentMode || isAnimating) return;
     isAnimating = true;
 
+    form.dispatchEvent(new CustomEvent('auth-mode-change', { bubbles: true, detail: mode }));
+
     const isForward = mode === 'register';
     const outClass = isForward ? 'auth-form-slot--out-left' : 'auth-form-slot--out-right';
     const inClass = isForward ? 'auth-form-slot--in-right' : 'auth-form-slot--in-left';
@@ -255,6 +257,17 @@ export function createAuthForm(initialMode: 'login' | 'register' = 'login'): HTM
   footerAction?.addEventListener('click', () =>
     setMode(footerAction.textContent === 'Register' ? 'register' : 'login'),
   );
+
+  form.addEventListener('auth-mode-set', (event) => {
+    const mode = (event as CustomEvent<'login' | 'register'>).detail;
+    if (mode === currentMode || (mode !== 'login' && mode !== 'register')) return;
+
+    isAnimating = false;
+    applyMode(mode);
+    currentMode = mode;
+    form.dispatchEvent(new CustomEvent('auth-mode-change', { bubbles: true, detail: mode }));
+  });
+
   form.addEventListener('click', (event) => {
     if (event.target === form) requestClose();
   });

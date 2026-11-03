@@ -29,9 +29,10 @@ import { createAppLayout } from '@/components/layout/app-layout';
 describe('createAppLayout', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.isSessionActive.mockReturnValue(true);
+    mocks.isSessionActive.mockReturnValue(false);
     vi.useRealTimers();
     document.body.className = '';
+    globalThis.history.replaceState({}, '', '/');
   });
 
   afterEach(() => {
