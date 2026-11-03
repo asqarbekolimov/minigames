@@ -32,6 +32,7 @@ describe('createAppLayout', () => {
     mocks.isSessionActive.mockReturnValue(true);
     vi.useRealTimers();
     document.body.className = '';
+    globalThis.history.replaceState({}, '', '/');
   });
 
   afterEach(() => {
