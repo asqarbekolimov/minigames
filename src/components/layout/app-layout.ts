@@ -85,6 +85,13 @@ export function createAppLayout(): AppLayout {
   };
 
   const openAuthModal = (mode: AuthMode = 'login', options: OpenOptions = {}) => {
+    if (isSessionActive()) {
+      if (loginModal) closeLoginModal({ updateUrl: options.updateUrl });
+      else if (options.updateUrl !== false) updateUrlState({ auth: undefined }, 'replace');
+
+      return;
+    }
+
     if (loginModal) {
       if (authMode !== mode) {
         authMode = mode;
@@ -200,7 +207,10 @@ export function createAppLayout(): AppLayout {
       }
 
       if (state.auth) {
-        if (loginModal) {
+        if (isSessionActive()) {
+          if (loginModal) closeLoginModal({ updateUrl: false });
+          updateUrlState({ auth: undefined }, 'replace');
+        } else if (loginModal) {
           if (authMode !== state.auth) {
             authMode = state.auth;
             loginModal.dispatchEvent(
@@ -247,7 +257,7 @@ export function createAppLayout(): AppLayout {
   });
 
   globalThis.addEventListener('auth-required-for-action', () => {
-    if (loginModal) return;
+    if (loginModal || isSessionActive()) return;
 
     if (gameDetailsModal) {
       gameDetailsModal.hidden = true;
