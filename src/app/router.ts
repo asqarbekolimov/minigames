@@ -1,10 +1,11 @@
+import { navigateToRoute, readUrlState, type AppRoute } from '@/app/url-state';
 import { createAppLayout } from '@/components/layout/app-layout';
 import { isSessionActive } from '@/services/auth';
 import { createHomePage } from '@/pages';
 import { createLibraryPage } from '@/pages/library/library-page';
 import { createNotFoundPage } from '@/pages/not-found/not-found-page';
 
-type RouteName = 'home' | 'library' | 'not-found';
+type RouteName = AppRoute;
 type RouteView = () => HTMLElement;
 
 const routes: Record<RouteName, RouteView> = {
@@ -13,28 +14,8 @@ const routes: Record<RouteName, RouteView> = {
   'not-found': createNotFoundPage,
 };
 
-const routePaths: Record<RouteName, string> = {
-  home: '/',
-  library: '/library',
-  'not-found': '/404',
-};
-
 function isRouteName(value: string | undefined): value is RouteName {
   return value !== undefined && Object.hasOwn(routes, value);
-}
-
-function pathToRoute(pathname: string): RouteName {
-  const normalized = pathname.replace(/\/+$/, '') || '/';
-
-  if (normalized === '/library') {
-    return 'library';
-  }
-
-  if (normalized === '/' || normalized === '/home') {
-    return 'home';
-  }
-
-  return 'not-found';
 }
 
 function renderApp(root: HTMLElement): void {
@@ -55,8 +36,7 @@ function renderApp(root: HTMLElement): void {
     isSessionActive();
     if (route === currentRoute) return;
 
-    const path = routePaths[route];
-    globalThis.history.pushState({ route }, '', path);
+    navigateToRoute(route);
     render(route);
   }
 
@@ -76,10 +56,10 @@ function renderApp(root: HTMLElement): void {
   });
 
   globalThis.addEventListener('popstate', () => {
-    render(pathToRoute(globalThis.location.pathname));
+    render(readUrlState().route);
   });
 
-  render(pathToRoute(globalThis.location.pathname));
+  render(readUrlState().route);
 }
 
 export default renderApp;
