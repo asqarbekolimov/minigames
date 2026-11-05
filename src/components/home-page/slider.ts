@@ -1,3 +1,4 @@
+import { play } from '@/utils/sounds';
 import type { GameCardI } from '@/utils/type';
 
 interface SliderSizesI {
@@ -274,12 +275,14 @@ export function createSliderSection(games: GameCardI[]): HTMLElement {
   const nextButton = slider.querySelector<HTMLButtonElement>('.slider__button-item--next');
 
   previousButton?.addEventListener('click', () => {
+    play('wisp', { volume: 0.6, pitch: 0.92 });
     target = Math.round(target) - 1;
     startAnimation();
     scheduleAutoplay(AUTOPLAY_DELAY);
   });
 
   nextButton?.addEventListener('click', () => {
+    play('wisp', { volume: 0.6, pitch: 1.08 });
     target = Math.round(target) + 1;
     startAnimation();
     scheduleAutoplay(AUTOPLAY_DELAY);

@@ -1,6 +1,7 @@
 import { navigateToRoute, readUrlState, type AppRoute } from '@/app/url-state';
 import { createAppLayout } from '@/components/layout/app-layout';
 import { isSessionActive } from '@/services/auth';
+import { play } from '@/utils/sounds';
 import { createHomePage } from '@/pages';
 import { createLibraryPage } from '@/pages/library/library-page';
 import { createNotFoundPage } from '@/pages/not-found/not-found-page';
@@ -36,6 +37,7 @@ function renderApp(root: HTMLElement): void {
     isSessionActive();
     if (route === currentRoute) return;
 
+    play('tick', { volume: 0.7 });
     navigateToRoute(route);
     render(route);
   }

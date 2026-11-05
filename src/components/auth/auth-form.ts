@@ -9,6 +9,7 @@ import {
   signInWithEmail,
   signInWithGoogle,
 } from '@/services/auth';
+import { play } from '@/utils/sounds';
 import './login-page.scss';
 
 interface AuthSubmitDetail {
@@ -177,6 +178,7 @@ export function createAuthForm(initialMode: 'login' | 'register' = 'login'): HTM
 
   const requestClose = (): void => {
     if (isAuthPending) return;
+    play('hush', { volume: 0.7 });
     form.dispatchEvent(new Event('login-modal-close'));
   };
 
@@ -197,6 +199,7 @@ export function createAuthForm(initialMode: 'login' | 'register' = 'login'): HTM
       triggerButton?.removeAttribute('aria-busy');
       setPending(false);
 
+      play('paid');
       showSnackbar({ message: successMessage(user), variant: 'success' });
       form.dispatchEvent(new Event('login-modal-close'));
     } catch (error) {
@@ -209,6 +212,7 @@ export function createAuthForm(initialMode: 'login' | 'register' = 'login'): HTM
         return;
       }
 
+      play('buzz');
       showSnackbar({ message: getAuthErrorMessage(error), variant: 'error' });
     }
   };
@@ -252,11 +256,15 @@ export function createAuthForm(initialMode: 'login' | 'register' = 'login'): HTM
   });
 
   for (const tab of tabs) {
-    tab.addEventListener('click', () => setMode(tab.dataset.authTab as 'login' | 'register'));
+    tab.addEventListener('click', () => {
+      play('tick', { volume: 0.6 });
+      setMode(tab.dataset.authTab as 'login' | 'register');
+    });
   }
-  footerAction?.addEventListener('click', () =>
-    setMode(footerAction.textContent === 'Register' ? 'register' : 'login'),
-  );
+  footerAction?.addEventListener('click', () => {
+    play('tick', { volume: 0.6 });
+    setMode(footerAction.textContent === 'Register' ? 'register' : 'login');
+  });
 
   form.addEventListener('auth-mode-set', (event) => {
     const mode = (event as CustomEvent<'login' | 'register'>).detail;

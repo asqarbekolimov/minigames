@@ -14,6 +14,7 @@ import {
 } from '@/services/api';
 import { getCurrentSession, isSessionActive } from '@/services/auth';
 import { deriveDisplayName, type AppSession } from '@/services/session';
+import { play } from '@/utils/sounds';
 import type { ApiResponseI, CommentI, GameDetailsI, TopRecordI } from '@/utils/type';
 import './game-details.scss';
 
@@ -58,11 +59,15 @@ function setupDismiss(page: HTMLElement): void {
   const closeButton = page.querySelector<HTMLButtonElement>('.game-details__close');
 
   closeButton?.addEventListener('click', () => {
+    play('hush', { volume: 0.7 });
     page.dispatchEvent(new Event('game-details-close'));
   });
 
   page.addEventListener('click', (event) => {
-    if (event.target === page) page.dispatchEvent(new Event('game-details-close'));
+    if (event.target !== page) return;
+
+    play('hush', { volume: 0.7 });
+    page.dispatchEvent(new Event('game-details-close'));
   });
 }
 
@@ -168,6 +173,7 @@ function renderGameDetails(
   `;
 
   renderRecords(body, game.topRecords);
+  setupPlayButton(page);
   setupFavoriteToggle(page, gameSlug);
 
   const commentsElement = body.querySelector<HTMLElement>('[data-comments-content]');
@@ -251,6 +257,11 @@ function updateCommentsTitle(body: HTMLElement, totalComments: number): void {
   if (title) title.textContent = `Comments (${totalComments})`;
 }
 
+function setupPlayButton(page: HTMLElement): void {
+  const playButton = page.querySelector<HTMLButtonElement>('.game-details__play');
+  playButton?.addEventListener('click', () => play('landed'));
+}
+
 function setupFavoriteToggle(page: HTMLElement, gameSlug: string): void {
   const favoriteButton = page.querySelector<HTMLButtonElement>('.game-details__favorite');
   if (!favoriteButton) return;
@@ -281,6 +292,7 @@ async function toggleFavoriteState(
     const response = await toggleFavorite(gameSlug, session.email);
 
     applyFavoriteState(page, button, response.data.isFavorited, response.data.likesCount);
+    play(response.data.isFavorited ? 'perk' : 'hush', { volume: 0.8 });
   } catch (error) {
     const isAmbiguous = isAmbiguousRequestError(error);
 
@@ -418,6 +430,7 @@ async function submitComment(
 
   textarea.value = '';
   resizeTextarea(textarea);
+  play('paid', { volume: 0.7 });
   showSnackbar({ message: 'Your comment has been posted.', variant: 'success' });
 
   await refreshComments();
@@ -488,6 +501,7 @@ async function toggleCommentLikeState(button: HTMLButtonElement): Promise<void> 
     const response = await toggleCommentLike(commentId, session.email);
 
     applyCommentLikeState(button, response.data.isLikedByCurrentUser, response.data.likesCount);
+    play(response.data.isLikedByCurrentUser ? 'tick' : 'plop', { volume: 0.6 });
   } catch (error) {
     const isAmbiguous = isAmbiguousRequestError(error);
 

@@ -4,6 +4,7 @@ import { createGameCards } from '@/components/game-cards/game-cards';
 import { createAsyncContent, createSkeleton } from '@/components/common/async-content';
 import { showSnackbar } from '@/components/common/snackbar';
 import { getGames } from '@/services/api';
+import { play } from '@/utils/sounds';
 import { APP_URL_CHANGE, readUrlState, updateUrlState, type AppUrlState } from '@/app/url-state';
 import type { ApiMetaI, GameCardI, GameSort, GamesQueryI } from '@/utils/type';
 
@@ -288,7 +289,10 @@ function createPageControl(
   }
 
   pageControl.addEventListener('click', () => {
-    if (!isActive) onPageChange(page);
+    if (isActive) return;
+
+    play('tick', { volume: 0.6, pitch: 1 + page * 0.02 });
+    onPageChange(page);
   });
 
   return pageControl;
@@ -309,7 +313,10 @@ function createArrowControl(
   arrow.classList.add('pagination__arrow', direction);
   arrow.setAttribute('aria-hidden', 'true');
   arrowControl.append(arrow);
-  arrowControl.addEventListener('click', onClick);
+  arrowControl.addEventListener('click', () => {
+    play('tick', { volume: 0.6, pitch: direction === 'next' ? 1.1 : 0.9 });
+    onClick();
+  });
 
   return arrowControl;
 }

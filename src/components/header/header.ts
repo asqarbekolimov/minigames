@@ -2,6 +2,7 @@ import './header.scss';
 import logoPath from '@/assets/icons/logo.svg';
 import { showSnackbar } from '@/components/common/snackbar';
 import { getCurrentSession, signOutUser, type AuthSession } from '@/services/auth';
+import { play } from '@/utils/sounds';
 
 const navLinks = [
   { route: 'home', name: 'Home', path: '/' },
@@ -59,6 +60,7 @@ export function createHeader(): HTMLElement {
   signInButton.classList.add('button', 'signin__button');
   signInButton.textContent = 'Log In';
   signInButton.addEventListener('click', () => {
+    play('step', { pitch: 1.12 });
     globalThis.dispatchEvent(new CustomEvent('open-auth-modal', { detail: 'login' }));
   });
 
@@ -66,6 +68,7 @@ export function createHeader(): HTMLElement {
   signUpButton.classList.add('button', 'signup__button');
   signUpButton.textContent = 'Sign Up';
   signUpButton.addEventListener('click', () => {
+    play('step', { pitch: 0.92 });
     globalThis.dispatchEvent(new CustomEvent('open-auth-modal', { detail: 'register' }));
   });
 
@@ -84,6 +87,7 @@ export function createHeader(): HTMLElement {
   logoutButton.type = 'button';
   logoutButton.textContent = 'Log Out';
   logoutButton.addEventListener('click', async () => {
+    play('sigh');
     await signOutUser();
     showSnackbar({ message: 'You have been signed out.', variant: 'info' });
   });
@@ -159,6 +163,7 @@ export function createHeader(): HTMLElement {
   mobileSignInButton.classList.add('button', 'signin__button', 'signin__button--mobile');
   mobileSignInButton.textContent = 'Log In';
   mobileSignInButton.addEventListener('click', () => {
+    play('step', { pitch: 1.12 });
     globalThis.dispatchEvent(new CustomEvent('open-auth-modal', { detail: 'login' }));
     toggleMenu();
   });
@@ -167,6 +172,7 @@ export function createHeader(): HTMLElement {
   mobileSignUpButton.classList.add('button', 'signup__button', 'signup__button--mobile');
   mobileSignUpButton.textContent = 'Sign Up';
   mobileSignUpButton.addEventListener('click', () => {
+    play('step', { pitch: 0.92 });
     globalThis.dispatchEvent(new CustomEvent('open-auth-modal', { detail: 'register' }));
     toggleMenu();
   });
@@ -182,6 +188,7 @@ export function createHeader(): HTMLElement {
   mobileLogoutButton.type = 'button';
   mobileLogoutButton.textContent = 'Log Out';
   mobileLogoutButton.addEventListener('click', async () => {
+    play('sigh');
     await signOutUser();
     showSnackbar({ message: 'You have been signed out.', variant: 'info' });
     toggleMenu();
@@ -198,6 +205,7 @@ export function createHeader(): HTMLElement {
 
   const toggleMenu = () => {
     const isOpen = header.classList.toggle('menu-open');
+    play(isOpen ? 'boot' : 'hush', { volume: 0.7 });
     menuButton.classList.toggle('active', isOpen);
     mobileMenu.classList.toggle('is-open', isOpen);
     document.body.classList.toggle('menu-open', isOpen);
