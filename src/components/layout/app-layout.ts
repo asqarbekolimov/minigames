@@ -10,6 +10,7 @@ import { createFooter } from '@/components/footer/footer';
 import { createAuthForm } from '@/components/auth/auth-form';
 import { createGameDetails } from '@/components/game-details/game-details';
 import { isSessionActive } from '@/services/auth';
+import { play } from '@/utils/sounds';
 
 export interface AppLayout {
   element: HTMLElement;
@@ -185,6 +186,7 @@ export function createAppLayout(): AppLayout {
     });
 
     if (options.updateUrl !== false) {
+      play('boot', { volume: 0.8 });
       updateUrlState({ game: gameSlug }, 'push');
     }
   };
@@ -241,7 +243,10 @@ export function createAppLayout(): AppLayout {
       return;
     }
 
-    if (gameDetailsModal) closeGameDetails();
+    if (gameDetailsModal) {
+      play('hush', { volume: 0.7 });
+      closeGameDetails();
+    }
   });
 
   document.addEventListener('click', (event) => {

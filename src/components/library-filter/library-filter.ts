@@ -3,6 +3,7 @@ import { DEFAULT_SORT } from '@/app/url-state';
 import { createAsyncContent, createSkeleton } from '@/components/common/async-content';
 import { showSnackbar } from '@/components/common/snackbar';
 import { getCategories } from '@/services/api';
+import { play } from '@/utils/sounds';
 import type { CategoryI, GameSort } from '@/utils/type';
 
 export { DEFAULT_SORT } from '@/app/url-state';
@@ -97,6 +98,7 @@ export function createLibraryFilter(options: LibraryFilterOptions = {}): Library
 
     activeCategory = slug;
     updateChipStates();
+    play('tick', { volume: 0.6 });
     options.onCategoryChange?.(slug);
   };
 
@@ -249,6 +251,7 @@ function createSortDropdown(
     selectedValue = value;
 
     if (hasChanged) {
+      play('tick', { volume: 0.6 });
       renderMenu();
       updateLabel();
       onSelect(value);
@@ -258,6 +261,7 @@ function createSortDropdown(
   };
 
   trigger.addEventListener('click', () => {
+    play(dropdown.classList.contains('is-open') ? 'hush' : 'boot', { volume: 0.5 });
     setOpen(!dropdown.classList.contains('is-open'));
   });
 
