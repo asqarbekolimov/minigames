@@ -1,5 +1,6 @@
 import './header.scss';
 import logoPath from '@/assets/icons/logo.svg';
+import { createInstallAppButton } from '@/components/common/install-app-button';
 import { showSnackbar } from '@/components/common/snackbar';
 import { getCurrentSession, signOutUser, type AuthSession } from '@/services/auth';
 import { play } from '@/utils/sounds';
@@ -196,10 +197,15 @@ export function createHeader(): HTMLElement {
 
   mobileUserArea.append(mobileUsername, mobileLogoutButton);
 
-  mobileActions.append(mobileSignInButton, mobileSignUpButton, mobileUserArea);
+  mobileActions.append(
+    createInstallAppButton('mobile'),
+    mobileSignInButton,
+    mobileSignUpButton,
+    mobileUserArea,
+  );
   mobileMenu.append(mobileHeaderRow, mobileNavbar, mobileActions);
 
-  actions.append(signInButton, signUpButton, userArea, menuButton);
+  actions.append(createInstallAppButton(), signInButton, signUpButton, userArea, menuButton);
   nav.append(navbar, actions);
   header.append(logo, nav, mobileMenu);
 

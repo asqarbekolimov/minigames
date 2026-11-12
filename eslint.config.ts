@@ -24,4 +24,13 @@ export default defineConfig(
       "unicorn/prefer-module": "error",
     },
   },
+  {
+    files: ["public/sw.js"],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.serviceworker,
+      },
+    },
+  },
 );
